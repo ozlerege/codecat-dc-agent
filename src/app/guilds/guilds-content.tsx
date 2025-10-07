@@ -21,10 +21,10 @@ export const GuildsContent = ({ initialUserName }: GuildsContentProps) => {
   const savedGuilds = data?.savedGuilds ?? [];
   const unsavedGuilds = data?.unsavedGuilds ?? [];
 
-  const handleSelectGuild = async (guildId: string) => {
+  const handleSelectGuild = async (guildId: string, guildName: string) => {
     try {
       setActiveGuildId(guildId);
-      await createGuildMutation.mutateAsync({ guildId });
+      await createGuildMutation.mutateAsync({ guildId, name: guildName });
     } catch (mutationError) {
       console.error("Failed to save guild:", mutationError);
     } finally {
@@ -71,14 +71,14 @@ export const GuildsContent = ({ initialUserName }: GuildsContentProps) => {
               description="Select a server to connect it with Jules and start managing tasks."
               guilds={unsavedGuilds}
               emptyMessage="All available servers are already configured."
-              renderAction={(guildId) => (
+              renderAction={(guild) => (
                 <SelectGuildButton
-                  onSelect={() => handleSelectGuild(guildId)}
+                  onSelect={() => handleSelectGuild(guild.id, guild.name)}
                   isLoading={
-                    createGuildMutation.isPending && activeGuildId === guildId
+                    createGuildMutation.isPending && activeGuildId === guild.id
                   }
                   disabled={
-                    createGuildMutation.isPending && activeGuildId !== guildId
+                    createGuildMutation.isPending && activeGuildId !== guild.id
                   }
                 />
               )}
@@ -102,7 +102,7 @@ type GuildSectionProps = {
   description: string;
   guilds: { id: string; name: string; icon: string | null }[];
   emptyMessage: string;
-  renderAction?: (guildId: string) => ReactNode;
+  renderAction?: (guild: { id: string; name: string; icon: string | null }) => ReactNode;
 };
 
 const GuildSection = ({
@@ -147,7 +147,7 @@ const GuildSection = ({
               </div>
 
               {renderAction ? (
-                <div className="pt-2">{renderAction(guild.id)}</div>
+                <div className="pt-2">{renderAction(guild)}</div>
               ) : (
                 <div className="flex flex-col gap-2 text-sm text-muted-foreground">
                   <span>This server is already configured.</span>

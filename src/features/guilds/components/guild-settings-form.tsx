@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import type { GuildDetailResult } from "@/lib/guilds/hooks";
 import { cn } from "@/lib/utils";
+import { GuildRoleSelector } from "@/features/guilds/components/guild-role-selector";
+import type { DiscordRole } from "@/lib/discord/roles";
 
 type GuildSettingsFormProps = {
   guild: GuildDetailResult["guild"];
@@ -16,17 +18,23 @@ type GuildSettingsFormProps = {
     defaultJulesApiKey?: string | null;
     permissions?: GuildDetailResult["guild"]["permissions"];
   }) => Promise<void>;
+  availableRoles: DiscordRole[];
+  isLoadingRoles: boolean;
+  rolesWarning?: string;
 };
 
-export const GuildSettingsForm = ({ guild, isSaving, onSubmit }: GuildSettingsFormProps) => {
+export const GuildSettingsForm = ({
+  guild,
+  isSaving,
+  onSubmit,
+  availableRoles,
+  isLoadingRoles,
+  rolesWarning,
+}: GuildSettingsFormProps) => {
   const [defaultRepo, setDefaultRepo] = useState(guild.defaultRepo ?? "");
   const [defaultBranch, setDefaultBranch] = useState(guild.defaultBranch ?? "");
-  const [createRoleIds, setCreateRoleIds] = useState(
-    guild.permissions.create_roles.join(", ")
-  );
-  const [confirmRoleIds, setConfirmRoleIds] = useState(
-    guild.permissions.confirm_roles.join(", ")
-  );
+  const [createRoles, setCreateRoles] = useState<string[]>([...guild.permissions.create_roles]);
+  const [confirmRoles, setConfirmRoles] = useState<string[]>([...guild.permissions.confirm_roles]);
   const [newDefaultKey, setNewDefaultKey] = useState("");
   const [clearDefaultKey, setClearDefaultKey] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
@@ -35,36 +43,25 @@ export const GuildSettingsForm = ({ guild, isSaving, onSubmit }: GuildSettingsFo
   useEffect(() => {
     setDefaultRepo(guild.defaultRepo ?? "");
     setDefaultBranch(guild.defaultBranch ?? "");
-    setCreateRoleIds(guild.permissions.create_roles.join(", "));
-    setConfirmRoleIds(guild.permissions.confirm_roles.join(", "));
+    setCreateRoles([...guild.permissions.create_roles]);
+    setConfirmRoles([...guild.permissions.confirm_roles]);
     setNewDefaultKey("");
     setClearDefaultKey(false);
   }, [guild.defaultRepo, guild.defaultBranch, guild.permissions]);
 
-  const parseRoleIds = (value: string) =>
-    value
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter((entry) => entry.length > 0);
-
   const hasPermissionsChanged = useMemo(() => {
-    const nextCreateRoles = parseRoleIds(createRoleIds);
-    const nextConfirmRoles = parseRoleIds(confirmRoleIds);
-
     const createChanged =
-      nextCreateRoles.length !== guild.permissions.create_roles.length ||
-      nextCreateRoles.some((role) => !guild.permissions.create_roles.includes(role));
+      createRoles.length !== guild.permissions.create_roles.length ||
+      createRoles.some((role) => !guild.permissions.create_roles.includes(role));
     const confirmChanged =
-      nextConfirmRoles.length !== guild.permissions.confirm_roles.length ||
-      nextConfirmRoles.some((role) => !guild.permissions.confirm_roles.includes(role));
+      confirmRoles.length !== guild.permissions.confirm_roles.length ||
+      confirmRoles.some((role) => !guild.permissions.confirm_roles.includes(role));
 
     return {
       createChanged,
       confirmChanged,
-      nextCreateRoles,
-      nextConfirmRoles,
     };
-  }, [createRoleIds, confirmRoleIds, guild.permissions]);
+  }, [createRoles, confirmRoles, guild.permissions]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -85,8 +82,8 @@ export const GuildSettingsForm = ({ guild, isSaving, onSubmit }: GuildSettingsFo
 
     if (hasPermissionsChanged.createChanged || hasPermissionsChanged.confirmChanged) {
       payload.permissions = {
-        create_roles: hasPermissionsChanged.nextCreateRoles,
-        confirm_roles: hasPermissionsChanged.nextConfirmRoles,
+        create_roles: createRoles,
+        confirm_roles: confirmRoles,
       };
     }
 
@@ -138,32 +135,36 @@ export const GuildSettingsForm = ({ guild, isSaving, onSubmit }: GuildSettingsFo
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="createRoles">Create Role IDs</Label>
-          <Input
-            id="createRoles"
-            placeholder="Comma separated role IDs"
-            value={createRoleIds}
-            onChange={(event) => setCreateRoleIds(event.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">
-            Provide Discord role IDs separated by commas.
-          </p>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="confirmRoles">Confirm Role IDs</Label>
-          <Input
-            id="confirmRoles"
-            placeholder="Comma separated role IDs"
-            value={confirmRoleIds}
-            onChange={(event) => setConfirmRoleIds(event.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">
-            Users in these roles can approve tasks instantly.
-          </p>
-        </div>
+      <div className="grid gap-6 sm:grid-cols-2">
+        <GuildRoleSelector
+          label="Create Role IDs"
+          description="Users in these roles can create Jules tasks."
+          roles={availableRoles}
+          value={createRoles}
+          onChange={(roleIds) => setCreateRoles(roleIds)}
+          disabled={isSaving || isLoadingRoles}
+        />
+        <GuildRoleSelector
+          label="Confirm Role IDs"
+          description="These roles can approve and fast-track automation tasks."
+          roles={availableRoles}
+          value={confirmRoles}
+          onChange={(roleIds) => setConfirmRoles(roleIds)}
+          disabled={isSaving || isLoadingRoles}
+        />
       </div>
+
+      {isLoadingRoles ? (
+        <p className="text-xs text-muted-foreground">Loading Discord roles…</p>
+      ) : rolesWarning ? (
+        <p className="text-xs text-muted-foreground">
+          Discord roles are unavailable; showing configured role IDs.
+        </p>
+      ) : availableRoles.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          No Discord roles available. Verify the bot has access to this guild.
+        </p>
+      ) : null}
 
       <div className="space-y-2">
         <Label htmlFor="defaultKey">Guild Jules API Key</Label>
@@ -216,4 +217,3 @@ export const GuildSettingsForm = ({ guild, isSaving, onSubmit }: GuildSettingsFo
     </form>
   );
 };
-

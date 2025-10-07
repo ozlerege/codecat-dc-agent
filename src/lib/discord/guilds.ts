@@ -13,7 +13,10 @@ const DEFAULT_DISCORD_AVATAR = "https://cdn.discordapp.com/embed/avatars/0.png";
 
 type TypedSupabaseClient = SupabaseClient;
 
-export const getGuildIconUrl = (guildId: string, icon: string | null | undefined) => {
+export const getGuildIconUrl = (
+  guildId: string,
+  icon: string | null | undefined
+) => {
   if (icon) {
     return `https://cdn.discordapp.com/icons/${guildId}/${icon}.png?size=128`;
   }

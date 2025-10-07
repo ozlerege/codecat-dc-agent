@@ -6,6 +6,7 @@ import {
   getGuildForUser,
   getRecentGuildTasks,
   sanitizeGuildPermissions,
+  updateGuildRecord,
 } from "@/lib/supabase/guilds";
 import { fetchAdminGuilds } from "@/lib/discord/guilds";
 
@@ -66,7 +67,7 @@ const mapGuildRecord = (
 
   return {
     id: record.guild_id,
-    name: options?.name ?? record.guild_id,
+    name: options?.name ?? record.name ?? record.guild_id,
     icon: options?.icon ?? null,
     defaultRepo: record.default_repo,
     defaultBranch: record.default_branch,
@@ -95,6 +96,7 @@ export const loadGuildDetail = async (
     throw new GuildDetailError("guild_not_found", 404);
   }
 
+  const guildUuid = guildRecord.id;
   let discordName = guildRecord.guild_id;
   let discordIcon: string | null = null;
 
@@ -105,6 +107,28 @@ export const loadGuildDetail = async (
     if (matchedGuild) {
       discordName = matchedGuild.name;
       discordIcon = matchedGuild.icon;
+      if (discordName && discordName !== (guildRecord.name ?? guildRecord.guild_id)) {
+        try {
+          if (guildRecord.installer_user_id) {
+            await updateGuildRecord(client, {
+              guildId,
+              installerUserId: guildRecord.installer_user_id,
+              name: discordName,
+            });
+          } else {
+            await client
+              .from("guilds")
+              .update({ name: discordName })
+              .eq("guild_id", guildId);
+          }
+          guildRecord = {
+            ...guildRecord,
+            name: discordName,
+          };
+        } catch (updateError) {
+          console.warn("Unable to persist guild name", updateError);
+        }
+      }
     }
   } catch (discordError) {
     console.warn("Unable to fetch Discord guild metadata:", discordError);
@@ -114,7 +138,7 @@ export const loadGuildDetail = async (
 
   if (options?.includeTasks ?? true) {
     try {
-      const guildTasks = await getRecentGuildTasks(client, guildId);
+      const guildTasks = await getRecentGuildTasks(client, guildUuid);
       tasks = guildTasks.map((task) => ({
         id: task.id,
         prompt: task.prompt,
@@ -128,10 +152,13 @@ export const loadGuildDetail = async (
     }
   }
 
+  const nameOverride =
+    discordName && discordName !== guildRecord.guild_id ? discordName : undefined;
+
   return {
     guild: mapGuildRecord(guildRecord, {
-      name: discordName,
-      icon: discordIcon,
+      name: nameOverride,
+      icon: discordIcon ?? undefined,
     }),
     tasks,
   };

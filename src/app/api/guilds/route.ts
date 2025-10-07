@@ -31,7 +31,10 @@ export async function GET() {
       storedGuilds = await getGuildRecordsByIds(supabase, guildIds);
     } catch (guildsError) {
       console.error("Error fetching guild records:", guildsError);
-      return NextResponse.json({ error: "guild_lookup_failed" }, { status: 500 });
+      return NextResponse.json(
+        { error: "guild_lookup_failed" },
+        { status: 500 }
+      );
     }
   }
 
@@ -80,6 +83,7 @@ export async function POST(request: Request) {
   }
 
   const guildId = (payload as { guildId?: unknown }).guildId;
+  const guildName = (payload as { guildName?: unknown }).guildName;
   const permissionsInput = (payload as { permissions?: unknown }).permissions;
 
   if (typeof guildId !== "string" || guildId.trim().length === 0) {
@@ -95,6 +99,10 @@ export async function POST(request: Request) {
     await createGuildRecord(supabase, {
       guildId,
       installerUserId: data.session.user.id,
+      name:
+        typeof guildName === "string" && guildName.trim().length > 0
+          ? guildName.trim()
+          : undefined,
       permissions,
     });
   } catch (insertError) {

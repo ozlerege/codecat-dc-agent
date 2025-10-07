@@ -34,32 +34,35 @@ export type Database = {
         Row: {
           id: string;
           guild_id: string;
-          installer_user_id: string;
+          installer_user_id: string | null;
+          name: string | null;
           default_repo: string | null;
-          default_branch: string;
-          permissions: GuildPermissions;
+          default_branch: string | null;
+          permissions: GuildPermissions | null;
           default_jules_api_key: string | null;
-          created_at: string;
+          created_at: string | null;
         };
         Insert: {
           id?: string;
           guild_id: string;
-          installer_user_id: string;
+          installer_user_id?: string | null;
+          name?: string | null;
           default_repo?: string | null;
-          default_branch?: string;
-          permissions?: GuildPermissions;
+          default_branch?: string | null;
+          permissions?: GuildPermissions | null;
           default_jules_api_key?: string | null;
-          created_at?: string;
+          created_at?: string | null;
         };
         Update: {
           id?: string;
           guild_id?: string;
-          installer_user_id?: string;
+          installer_user_id?: string | null;
+          name?: string | null;
           default_repo?: string | null;
-          default_branch?: string;
-          permissions?: GuildPermissions;
+          default_branch?: string | null;
+          permissions?: GuildPermissions | null;
           default_jules_api_key?: string | null;
-          created_at?: string;
+          created_at?: string | null;
         };
       };
       tasks: {

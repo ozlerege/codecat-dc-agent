@@ -1,12 +1,42 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
+
+import { useMemo } from "react";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { GuildDetailResult } from "@/lib/guilds/hooks";
+import { useGuildRolesQuery } from "@/lib/guilds/hooks";
 
 type GuildOverviewProps = {
   guild: GuildDetailResult["guild"];
 };
 
 export const GuildOverview = ({ guild }: GuildOverviewProps) => {
+  const rolesQuery = useGuildRolesQuery(guild.id);
+
+  const roleNameLookup = useMemo(() => {
+    if (!rolesQuery.data?.roles) {
+      return new Map<string, string>();
+    }
+
+    return new Map(
+      rolesQuery.data.roles.map((role) => [role.id, role.name] as const)
+    );
+  }, [rolesQuery.data?.roles]);
+
+  const getRoleLabel = (roleId: string) => roleNameLookup.get(roleId);
+
+  const isRolesLoading = (rolesQuery.isLoading || rolesQuery.isFetching) && !rolesQuery.isError;
+  const hasRoleNames = roleNameLookup.size > 0;
+  const shouldShowUnknownNames =
+    rolesQuery.isFetched && !rolesQuery.isLoading && !hasRoleNames;
+
   return (
     <div className="space-y-8">
       <section className="space-y-4">
@@ -20,32 +50,48 @@ export const GuildOverview = ({ guild }: GuildOverviewProps) => {
           <Card>
             <CardHeader>
               <CardTitle>Default Repository</CardTitle>
-              <CardDescription>Target repo for generated pull requests.</CardDescription>
+              <CardDescription>
+                Target repo for generated pull requests.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm">
-                {guild.defaultRepo ? guild.defaultRepo : <span className="text-muted-foreground">Not configured</span>}
+                {guild.defaultRepo ? (
+                  guild.defaultRepo
+                ) : (
+                  <span className="text-muted-foreground">Not configured</span>
+                )}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
               <CardTitle>Default Branch</CardTitle>
-              <CardDescription>Branch used when none is provided.</CardDescription>
+              <CardDescription>
+                Branch used when none is provided.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm">
-                {guild.defaultBranch ? guild.defaultBranch : <span className="text-muted-foreground">Not configured</span>}
+                {guild.defaultBranch ? (
+                  guild.defaultBranch
+                ) : (
+                  <span className="text-muted-foreground">Not configured</span>
+                )}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
               <CardTitle>Guild Jules API Key</CardTitle>
-              <CardDescription>Guild-level fallback credential.</CardDescription>
+              <CardDescription>
+                Guild-level fallback credential.
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <Badge variant={guild.defaultJulesApiKeySet ? "default" : "outline"}>
+              <Badge
+                variant={guild.defaultJulesApiKeySet ? "default" : "outline"}
+              >
                 {guild.defaultJulesApiKeySet ? "Configured" : "Not set"}
               </Badge>
             </CardContent>
@@ -60,8 +106,36 @@ export const GuildOverview = ({ guild }: GuildOverviewProps) => {
             Roles authorized to create or confirm Jules automation tasks.
           </p>
         </header>
-        <PermissionsList title="Create Roles" roleIds={guild.permissions.create_roles} emptyMessage="No create roles configured." />
-        <PermissionsList title="Confirm Roles" roleIds={guild.permissions.confirm_roles} emptyMessage="No confirm roles configured." />
+        <PermissionsList
+          title="Create Roles"
+          roleIds={guild.permissions.create_roles}
+          emptyMessage="No create roles configured."
+          getLabel={getRoleLabel}
+          isLoadingNames={
+            isRolesLoading &&
+            guild.permissions.create_roles.length > 0 &&
+            !hasRoleNames
+          }
+          showUnknownNames={
+            shouldShowUnknownNames &&
+            guild.permissions.create_roles.length > 0
+          }
+        />
+        <PermissionsList
+          title="Confirm Roles"
+          roleIds={guild.permissions.confirm_roles}
+          emptyMessage="No confirm roles configured."
+          getLabel={getRoleLabel}
+          isLoadingNames={
+            isRolesLoading &&
+            guild.permissions.confirm_roles.length > 0 &&
+            !hasRoleNames
+          }
+          showUnknownNames={
+            shouldShowUnknownNames &&
+            guild.permissions.confirm_roles.length > 0
+          }
+        />
       </section>
     </div>
   );
@@ -71,9 +145,19 @@ type PermissionsListProps = {
   title: string;
   roleIds: string[];
   emptyMessage: string;
+  getLabel: (roleId: string) => string | undefined;
+  isLoadingNames: boolean;
+  showUnknownNames: boolean;
 };
 
-const PermissionsList = ({ title, roleIds, emptyMessage }: PermissionsListProps) => (
+const PermissionsList = ({
+  title,
+  roleIds,
+  emptyMessage,
+  getLabel,
+  isLoadingNames,
+  showUnknownNames,
+}: PermissionsListProps) => (
   <Card>
     <CardHeader>
       <CardTitle className="text-base">{title}</CardTitle>
@@ -81,16 +165,44 @@ const PermissionsList = ({ title, roleIds, emptyMessage }: PermissionsListProps)
     <CardContent>
       {roleIds.length > 0 ? (
         <ul className="grid gap-2 sm:grid-cols-2">
-          {roleIds.map((roleId) => (
-            <li key={roleId} className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
-              {roleId}
-            </li>
-          ))}
+          {roleIds.map((roleId) => {
+            const label = getLabel(roleId);
+
+            return (
+              <li
+                key={roleId}
+                className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground"
+                title={showUnknownNames ? `Role ID ${roleId}` : undefined}
+              >
+                {isLoadingNames ? (
+                  <span
+                    className="inline-flex h-4 w-24 animate-pulse rounded bg-muted-foreground/20"
+                    aria-hidden="true"
+                  />
+                ) : label ? (
+                  label
+                ) : (
+                  <span>
+                    Unknown role
+                    <span className="sr-only">{` (${roleId})`}</span>
+                  </span>
+                )}
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="text-sm text-muted-foreground">{emptyMessage}</p>
       )}
+      {isLoadingNames ? (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Loading Discord role names…
+        </p>
+      ) : showUnknownNames && roleIds.length > 0 ? (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Role names unavailable; Discord did not return role metadata.
+        </p>
+      ) : null}
     </CardContent>
   </Card>
 );
-

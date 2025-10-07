@@ -17,7 +17,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { getGuildIconUrl } from "@/lib/discord/guilds";
-import { Badge } from "@/components/ui/badge";
 import { useGuildRouteContext } from "../context";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -44,7 +43,11 @@ const navItems = [
   },
 ];
 
-export const GuildSidebarLayout = ({ children }: { children: React.ReactNode }) => {
+export const GuildSidebarLayout = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   return (
     <SidebarProvider>
       <SidebarNav />
@@ -55,27 +58,36 @@ export const GuildSidebarLayout = ({ children }: { children: React.ReactNode }) 
 
 const SidebarNav = () => {
   const pathname = usePathname();
-  const { guildId, guildName, guildIcon, initialDetail } = useGuildRouteContext();
+  const { guildId, guildName, guildIcon, initialDetail } =
+    useGuildRouteContext();
   const detailQuery = useGuildDetailQuery(guildId, {
     initialData: initialDetail,
     includeTasks: false,
   });
   const { close } = useSidebar();
+
+  console.log("detailQuery.data", detailQuery.data);
   const sidebarGuild = detailQuery.data?.guild ?? initialDetail.guild;
   const avatarUrl = getGuildIconUrl(guildId, guildIcon ?? sidebarGuild.icon);
-  const displayName = sidebarGuild.name ?? guildName;
+  const displayName = sidebarGuild.name;
 
+  console.log(sidebarGuild);
   return (
     <Sidebar className="bg-muted/40">
       <div className="flex h-full flex-col">
         <SidebarHeader>
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 overflow-hidden rounded-full border">
-              <img src={avatarUrl} alt={`${guildName} icon`} className="h-full w-full object-cover" />
+              <img
+                src={avatarUrl}
+                alt={`${guildName} icon`}
+                className="h-full w-full object-cover"
+              />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-semibold leading-tight">{displayName}</span>
-              <span className="text-xs text-muted-foreground">Guild ID: {guildId}</span>
+              <span className="text-sm font-semibold leading-tight">
+                {displayName}
+              </span>
             </div>
           </div>
         </SidebarHeader>
@@ -93,11 +105,15 @@ const SidebarNav = () => {
                       href={href}
                       className={cn(
                         "group flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                        isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        isActive
+                          ? "bg-muted text-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
                       )}
                       onClick={close}
                     >
-                      <span className="flex h-4 w-4 items-center justify-center">{item.icon}</span>
+                      <span className="flex h-4 w-4 items-center justify-center">
+                        {item.icon}
+                      </span>
                       <span>{item.label}</span>
                     </Link>
                   </SidebarMenuItem>
@@ -106,18 +122,6 @@ const SidebarNav = () => {
             </SidebarMenu>
           </SidebarSection>
         </SidebarContent>
-        <SidebarFooter>
-          <div className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-foreground">Create Roles</span>
-              <Badge variant="outline">{sidebarGuild.permissions.create_roles.length}</Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-foreground">Confirm Roles</span>
-              <Badge variant="outline">{sidebarGuild.permissions.confirm_roles.length}</Badge>
-            </div>
-          </div>
-        </SidebarFooter>
       </div>
     </Sidebar>
   );
@@ -137,10 +141,7 @@ const GuildMainLayout = ({ children }: { children: React.ReactNode }) => {
         <div className="flex items-center gap-3">
           <SidebarTrigger />
           <div>
-            <h1 className="text-2xl font-semibold">{currentName}</h1>
-            <p className="text-sm text-muted-foreground">
-              Manage Jules automation settings and monitor activity.
-            </p>
+            <p className="text-xl font-semibold">{currentName}</p>
           </div>
         </div>
         <SignOutButton />

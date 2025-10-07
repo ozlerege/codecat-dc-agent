@@ -59,6 +59,7 @@ export const getGuildRecordsByIds = async (
 type CreateGuildRecordInput = {
   guildId: string;
   installerUserId: string;
+  name?: string | null;
   permissions?: GuildPermissions;
   defaultBranch?: string | null;
   defaultRepo?: string | null;
@@ -72,6 +73,7 @@ export const createGuildRecord = async (
   const {
     guildId,
     installerUserId,
+    name = null,
     permissions = DEFAULT_DB_GUILD_PERMISSIONS,
     defaultBranch = "main",
     defaultRepo = null,
@@ -82,6 +84,7 @@ export const createGuildRecord = async (
     {
       guild_id: guildId,
       installer_user_id: installerUserId,
+      name,
       default_branch: defaultBranch,
       permissions,
       default_repo: defaultRepo,
@@ -96,12 +99,21 @@ export const createGuildRecord = async (
   if (error) {
     throw error;
   }
+
+  if (name) {
+    await client
+      .from("guilds")
+      .update({ name })
+      .eq("guild_id", guildId)
+      .eq("installer_user_id", installerUserId);
+  }
 };
 
 export type GuildRecord = {
   id: string;
   guild_id: string;
   installer_user_id: string | null;
+  name: string | null;
   default_repo: string | null;
   default_branch: string | null;
   permissions: GuildPermissions | null;
@@ -117,7 +129,7 @@ export const getGuildForUser = async (
   const { data, error } = await client
     .from("guilds")
     .select(
-      "id, guild_id, installer_user_id, default_repo, default_branch, permissions, default_jules_api_key, created_at"
+      "id, guild_id, installer_user_id, name, default_repo, default_branch, permissions, default_jules_api_key, created_at"
     )
     .eq("guild_id", guildId)
     .eq("installer_user_id", userId)
@@ -137,6 +149,7 @@ type UpdateGuildRecordInput = {
   defaultBranch?: string | null;
   defaultJulesApiKey?: string | null;
   permissions?: GuildPermissions;
+  name?: string | null;
 };
 
 export const updateGuildRecord = async (
@@ -150,6 +163,7 @@ export const updateGuildRecord = async (
     defaultBranch,
     defaultJulesApiKey,
     permissions,
+    name,
   } = input;
 
   const updates: Record<string, unknown> = {};
@@ -170,13 +184,17 @@ export const updateGuildRecord = async (
     updates.permissions = permissions;
   }
 
+  if (name !== undefined) {
+    updates.name = name;
+  }
+
   const { data, error } = await client
     .from("guilds")
     .update(updates)
     .eq("guild_id", guildId)
     .eq("installer_user_id", installerUserId)
     .select(
-      "id, guild_id, installer_user_id, default_repo, default_branch, permissions, default_jules_api_key, created_at"
+      "id, guild_id, installer_user_id, name, default_repo, default_branch, permissions, default_jules_api_key, created_at"
     )
     .maybeSingle();
 

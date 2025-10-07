@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { GuildDetail } from "@/lib/guilds/service";
+import type { DiscordRole } from "@/lib/discord/roles";
 
 export type GuildSummary = {
   id: string;
@@ -29,7 +30,8 @@ const fetchGuilds = async (): Promise<GuildsQueryResult> => {
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
-    const errorMessage = (errorBody as { error?: string }).error ?? "Failed to load guilds";
+    const errorMessage =
+      (errorBody as { error?: string }).error ?? "Failed to load guilds";
     throw new Error(errorMessage);
   }
 
@@ -38,6 +40,7 @@ const fetchGuilds = async (): Promise<GuildsQueryResult> => {
 
 type CreateGuildInput = {
   guildId: string;
+  name?: string | null;
 };
 
 const createGuild = async (input: CreateGuildInput) => {
@@ -47,12 +50,16 @@ const createGuild = async (input: CreateGuildInput) => {
       "Content-Type": "application/json",
     },
     credentials: "include",
-    body: JSON.stringify(input),
+    body: JSON.stringify({
+      guildId: input.guildId,
+      guildName: input.name,
+    }),
   });
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
-    const errorMessage = (errorBody as { error?: string }).error ?? "Failed to save guild";
+    const errorMessage =
+      (errorBody as { error?: string }).error ?? "Failed to save guild";
     throw new Error(errorMessage);
   }
 
@@ -76,7 +83,10 @@ export const useCreateGuildMutation = () => {
   });
 };
 
-const fetchGuildDetail = async (guildId: string, includeTasks: boolean): Promise<GuildDetailResult> => {
+const fetchGuildDetail = async (
+  guildId: string,
+  includeTasks: boolean
+): Promise<GuildDetailResult> => {
   const query = includeTasks ? "" : "?includeTasks=false";
   const response = await fetch(`/api/guilds/${guildId}${query}`, {
     credentials: "include",
@@ -84,7 +94,8 @@ const fetchGuildDetail = async (guildId: string, includeTasks: boolean): Promise
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
-    const errorMessage = (errorBody as { error?: string }).error ?? "Failed to load guild";
+    const errorMessage =
+      (errorBody as { error?: string }).error ?? "Failed to load guild";
     throw new Error(errorMessage);
   }
 
@@ -96,7 +107,10 @@ type UseGuildDetailOptions = {
   includeTasks?: boolean;
 };
 
-export const useGuildDetailQuery = (guildId: string, options?: UseGuildDetailOptions) =>
+export const useGuildDetailQuery = (
+  guildId: string,
+  options?: UseGuildDetailOptions
+) =>
   useQuery({
     queryKey: ["guild", guildId, options?.includeTasks ?? true],
     queryFn: () => fetchGuildDetail(guildId, options?.includeTasks ?? true),
@@ -127,7 +141,8 @@ const updateGuild = async ({
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
-    const errorMessage = (errorBody as { error?: string }).error ?? "Failed to update guild";
+    const errorMessage =
+      (errorBody as { error?: string }).error ?? "Failed to update guild";
     throw new Error(errorMessage);
   }
 
@@ -150,3 +165,48 @@ export const useUpdateGuildMutation = (guildId: string) => {
     },
   });
 };
+
+const fetchGuildRoles = async (
+  guildId: string
+): Promise<{ roles: DiscordRole[]; warning?: string }> => {
+  const response = await fetch(`/api/guilds/${guildId}/roles`, {
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({}));
+    const errorData = errorBody as { error?: string; message?: string };
+    const errorMessage =
+      errorData.message ?? errorData.error ?? "Failed to load roles";
+    throw new Error(errorMessage);
+  }
+
+  const data = (await response.json()) as {
+    roles: DiscordRole[];
+    warning?: string;
+  };
+  return data;
+};
+
+export const useGuildRolesQuery = (guildId: string) =>
+  useQuery<{ roles: DiscordRole[]; warning?: string }>({
+    queryKey: ["guild", guildId, "roles"],
+    queryFn: () => fetchGuildRoles(guildId),
+    enabled: typeof window !== "undefined" && guildId.length > 0,
+    placeholderData: () => ({ roles: [], warning: undefined }),
+    retry: (failureCount, error) => {
+      // Don't retry for authentication or permission errors
+      const errorMessage =
+        error instanceof Error ? error.message.toLowerCase() : "";
+      if (
+        errorMessage.includes("token") ||
+        errorMessage.includes("permission") ||
+        errorMessage.includes("unauthorized")
+      ) {
+        return false;
+      }
+      // Retry up to 2 times for other errors
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff, max 30s
+  });

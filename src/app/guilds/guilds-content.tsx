@@ -1,9 +1,11 @@
 "use client";
 import { useState, ReactNode } from "react";
+import Link from "next/link";
 import { SignOutButton } from "@/components/sign-out-button";
 import { SelectGuildButton } from "./select-guild-button";
 import { useCreateGuildMutation, useGuildsQuery } from "@/lib/guilds/hooks";
 import { buildGuildIconUrl } from "@/lib/discord/guilds";
+import { Button } from "@/components/ui/button";
 
 type GuildsContentProps = {
   initialUserName: string;
@@ -147,9 +149,12 @@ const GuildSection = ({
               {renderAction ? (
                 <div className="pt-2">{renderAction(guild.id)}</div>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  This server is already configured.
-                </p>
+                <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+                  <span>This server is already configured.</span>
+                  <Button asChild size="sm" variant="outline" className="w-fit">
+                    <Link href={`/guilds/${guild.id}`}>View details</Link>
+                  </Button>
+                </div>
               )}
             </div>
           ))}

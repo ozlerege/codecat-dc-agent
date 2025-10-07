@@ -13,12 +13,16 @@ const DEFAULT_DISCORD_AVATAR = "https://cdn.discordapp.com/embed/avatars/0.png";
 
 type TypedSupabaseClient = SupabaseClient;
 
-export const buildGuildIconUrl = (guild: DiscordGuild) => {
-  if (guild.icon) {
-    return `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=128`;
+export const getGuildIconUrl = (guildId: string, icon: string | null | undefined) => {
+  if (icon) {
+    return `https://cdn.discordapp.com/icons/${guildId}/${icon}.png?size=128`;
   }
 
   return DEFAULT_DISCORD_AVATAR;
+};
+
+export const buildGuildIconUrl = (guild: DiscordGuild) => {
+  return getGuildIconUrl(guild.id, guild.icon);
 };
 
 export const userIsAdminInGuild = (guild: DiscordGuild) => {

@@ -1,18 +1,13 @@
-import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/sign-out-button";
 
 export default async function GuildsPage() {
   const session = await getServerSession();
 
-  if (!session) {
-    redirect("/");
-  }
-
   const userName =
-    session.user?.user_metadata?.custom_claims?.global_name ||
-    session.user?.user_metadata?.name ||
-    session.user?.email ||
+    session?.user?.user_metadata?.custom_claims?.global_name ||
+    session?.user?.user_metadata?.name ||
+    session?.user?.email ||
     "User";
 
   return (

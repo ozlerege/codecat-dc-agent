@@ -7,6 +7,7 @@
 • ⚙️ Backend: Railway (Bot + API)
 • 💻 Frontend: Vercel (Next.js dashboard)
 • 🤖 Integrations: Discord + GitHub + Jules API
+• Use bun for installs
 
 ## 1. Overview
 
@@ -306,16 +307,35 @@ The user asks questions about the following coding languages:
 - ShadCN
 - Python for discord bot
 
-### Code Implementation Guidelines
+## Core Development Principles
 
-Follow these rules when you write code:
+### 1. Code Quality Standards
 
-- Use early returns whenever possible to make the code more readable.
-- Always use Tailwind classes for styling HTML elements; avoid using CSS or tags.
-- Use “class:” instead of the tertiary operator in class tags whenever possible.
-- Use descriptive variable and function/const names. Also, event functions should be named with a “handle” prefix, like “handleClick” for onClick and “handleKeyDown” for onKeyDown.
-- Implement accessibility features on elements. For example, a tag should have a tabindex=“0”, aria-label, on:click, and on:keydown, and similar attributes.
-- Use consts instead of functions, for example, “const toggle = () =>”. Also, define a type if possible.
-- Always create and use reusable components to prevent redundancy and promote modularity.
-- Break down UI into smaller, functional components wherever possible to avoid code duplication.
-- Define interfaces, enums or types in a different organized files
+- **Clean Code**: Write self-documenting code with meaningful variable and function names
+- **DRY Principle**: Don't repeat yourself - extract common logic into reusable functions
+- **Single Responsibility**: Each function/component should do one thing well
+- **Error Handling**: Always handle errors gracefully with user-friendly messages
+- **Type Safety**: Use TypeScript for web/worker, type hints for Python
+
+### 2. UI/UX Requirements
+
+- **Modern Design**: Use contemporary, clean interfaces with subtle animations
+- **Accessibility**: All UI must be WCAG 2.1 AA compliant
+- **Responsive**: Mobile-first design that works on all screen sizes
+- **Loading States**: Always show loading indicators for async operations
+- **Error States**: Display helpful error messages with recovery actions
+
+### 3. Component Architecture
+
+- **Modular Components**: Break UI into small, reusable components
+- **Shadcn/ui**: Use shadcn/ui components as the foundation
+- **Composition**: Build complex UIs by composing simple components
+- **Props Interface**: Define clear TypeScript interfaces for all props
+- **State Management**: Use React hooks appropriately, avoid prop drilling
+
+#### Component Guidelines
+
+1. **Always use Shadcn/ui components** when available
+2. **Create custom components** that extend Shadcn/ui for specific needs
+3. **Use Tailwind CSS** for styling with consistent spacing scale
+4. **Implement loading and error states** for all async operations

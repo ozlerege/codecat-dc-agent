@@ -1,37 +1,28 @@
-import { getServerSession } from "@/lib/supabase/server";
-import { SignOutButton } from "@/components/sign-out-button";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { GuildsContent } from "./guilds-content";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import { getUserDisplayName } from "@/lib/users/display-name";
+
+type TypedSupabaseClient = SupabaseClient;
 
 export default async function GuildsPage() {
-  const session = await getServerSession();
+  const supabase = (await createClient()) as TypedSupabaseClient;
+  const { data, error } = await supabase.auth.getSession();
 
-  const userName =
-    session?.user?.user_metadata?.custom_claims?.global_name ||
-    session?.user?.user_metadata?.name ||
-    session?.user?.email ||
-    "User";
+  if (error) {
+    console.error("Error retrieving user session:", error);
+    redirect("/?error=session");
+  }
 
-  return (
-    <div className="min-h-screen p-8">
-      <header className="flex items-center justify-between max-w-7xl mx-auto mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Welcome, {userName}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your Discord guilds and development tasks
-          </p>
-        </div>
-        <SignOutButton />
-      </header>
+  const session = data.session;
 
-      <main className="max-w-7xl mx-auto">
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-          <h2 className="text-xl font-semibold mb-4">Your Guilds</h2>
-          <p className="text-muted-foreground">
-            Guild management coming soon...
-          </p>
-        </div>
-      </main>
-    </div>
-  );
+  if (!session?.user) {
+    redirect("/?error=unauthenticated");
+  }
+
+  const initialUserName = getUserDisplayName(session.user);
+
+  return <GuildsContent initialUserName={initialUserName} />;
 }

@@ -13,6 +13,7 @@ export const signInWithDiscord = async () => {
     provider: "discord",
     options: {
       redirectTo: `${window.location.origin}/auth/callback`,
+      scopes: "identify email guilds",
     },
   });
 
@@ -33,4 +34,3 @@ export const signOut = async () => {
     throw error;
   }
 };
-

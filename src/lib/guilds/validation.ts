@@ -1,4 +1,6 @@
-export const GUILD_ID_REGEX = /^\d{17,20}$/;
+import { GUILD_CONFIG } from "@/lib/config/constants";
+
+export const GUILD_ID_REGEX = GUILD_CONFIG.idPattern;
 
 export const normalizeGuildId = (value: string | string[] | undefined): string | null => {
   if (typeof value !== "string") {

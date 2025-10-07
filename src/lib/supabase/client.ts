@@ -1,19 +1,22 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { env } from "@/lib/config/env";
 
 export const createClient = () => {
   return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
 };
+
+import { DISCORD_CONFIG, ROUTES } from "@/lib/config/constants";
 
 export const signInWithDiscord = async () => {
   const supabase = createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "discord",
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
-      scopes: "identify email guilds",
+      redirectTo: `${window.location.origin}${ROUTES.auth.callback}`,
+      scopes: DISCORD_CONFIG.oauth.scopes,
     },
   });
 

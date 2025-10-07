@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { GuildDetail } from "@/lib/guilds/service";
 import type { DiscordRole } from "@/lib/discord/roles";
+import { apiClient } from "@/lib/api/client";
+import { getErrorMessage } from "@/lib/api/types";
 
 export type GuildSummary = {
   id: string;
@@ -24,18 +26,11 @@ export type GuildTaskSummary = GuildDetail["tasks"][number];
 export type GuildDetailResult = GuildDetail;
 
 const fetchGuilds = async (): Promise<GuildsQueryResult> => {
-  const response = await fetch("/api/guilds", {
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}));
-    const errorMessage =
-      (errorBody as { error?: string }).error ?? "Failed to load guilds";
-    throw new Error(errorMessage);
+  try {
+    return await apiClient.get<GuildsQueryResult>("/api/guilds");
+  } catch (error) {
+    throw new Error(getErrorMessage(error) || "Failed to load guilds");
   }
-
-  return response.json() as Promise<GuildsQueryResult>;
 };
 
 type CreateGuildInput = {
@@ -44,26 +39,14 @@ type CreateGuildInput = {
 };
 
 const createGuild = async (input: CreateGuildInput) => {
-  const response = await fetch("/api/guilds", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-    body: JSON.stringify({
+  try {
+    return await apiClient.post<{ success: boolean }>("/api/guilds", {
       guildId: input.guildId,
       guildName: input.name,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}));
-    const errorMessage =
-      (errorBody as { error?: string }).error ?? "Failed to save guild";
-    throw new Error(errorMessage);
+    });
+  } catch (error) {
+    throw new Error(getErrorMessage(error) || "Failed to save guild");
   }
-
-  return response.json() as Promise<{ success: boolean }>;
 };
 
 export const useGuildsQuery = () =>
@@ -87,19 +70,12 @@ const fetchGuildDetail = async (
   guildId: string,
   includeTasks: boolean
 ): Promise<GuildDetailResult> => {
-  const query = includeTasks ? "" : "?includeTasks=false";
-  const response = await fetch(`/api/guilds/${guildId}${query}`, {
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}));
-    const errorMessage =
-      (errorBody as { error?: string }).error ?? "Failed to load guild";
-    throw new Error(errorMessage);
+  try {
+    const query = includeTasks ? "" : "?includeTasks=false";
+    return await apiClient.get<GuildDetailResult>(`/api/guilds/${guildId}${query}`);
+  } catch (error) {
+    throw new Error(getErrorMessage(error) || "Failed to load guild");
   }
-
-  return response.json() as Promise<GuildDetailResult>;
 };
 
 type UseGuildDetailOptions = {
@@ -130,24 +106,15 @@ const updateGuild = async ({
   guildId,
   ...payload
 }: UpdateGuildInput): Promise<GuildDetailResult["guild"]> => {
-  const response = await fetch(`/api/guilds/${guildId}`, {
-    method: "PATCH",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}));
-    const errorMessage =
-      (errorBody as { error?: string }).error ?? "Failed to update guild";
-    throw new Error(errorMessage);
+  try {
+    const data = await apiClient.patch<{ guild: GuildDetailResult["guild"] }>(
+      `/api/guilds/${guildId}`,
+      payload
+    );
+    return data.guild;
+  } catch (error) {
+    throw new Error(getErrorMessage(error) || "Failed to update guild");
   }
-
-  const data = (await response.json()) as { guild: GuildDetailResult["guild"] };
-  return data.guild;
 };
 
 export const useUpdateGuildMutation = (guildId: string) => {
@@ -169,23 +136,13 @@ export const useUpdateGuildMutation = (guildId: string) => {
 const fetchGuildRoles = async (
   guildId: string
 ): Promise<{ roles: DiscordRole[]; warning?: string }> => {
-  const response = await fetch(`/api/guilds/${guildId}/roles`, {
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}));
-    const errorData = errorBody as { error?: string; message?: string };
-    const errorMessage =
-      errorData.message ?? errorData.error ?? "Failed to load roles";
-    throw new Error(errorMessage);
+  try {
+    return await apiClient.get<{ roles: DiscordRole[]; warning?: string }>(
+      `/api/guilds/${guildId}/roles`
+    );
+  } catch (error) {
+    throw new Error(getErrorMessage(error) || "Failed to load roles");
   }
-
-  const data = (await response.json()) as {
-    roles: DiscordRole[];
-    warning?: string;
-  };
-  return data;
 };
 
 export const useGuildRolesQuery = (guildId: string) =>

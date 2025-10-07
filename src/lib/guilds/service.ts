@@ -1,13 +1,8 @@
 import type { SupabaseClient, Session } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/schema";
-import {
-  DEFAULT_DB_GUILD_PERMISSIONS,
-  GuildRecord,
-  getGuildForUser,
-  getRecentGuildTasks,
-  sanitizeGuildPermissions,
-  updateGuildRecord,
-} from "@/lib/supabase/guilds";
+import { createRepositories, type GuildRecord } from "@/lib/db/repositories";
+import { sanitizeGuildPermissions } from "@/lib/supabase/guilds";
+import { GUILD_CONFIG } from "@/lib/config/constants";
 import { fetchAdminGuilds } from "@/lib/discord/guilds";
 
 type TypedSupabaseClient = SupabaseClient<Database>;
@@ -62,7 +57,7 @@ const mapGuildRecord = (
   options?: { name?: string; icon?: string | null }
 ) => {
   const permissions = sanitizeGuildPermissions(
-    record.permissions ?? DEFAULT_DB_GUILD_PERMISSIONS
+    record.permissions ?? GUILD_CONFIG.defaultPermissions
   );
 
   return {
@@ -83,10 +78,11 @@ export const loadGuildDetail = async (
   guildId: string,
   options?: LoadGuildDetailOptions
 ): Promise<GuildDetail> => {
+  const repos = createRepositories(client);
   let guildRecord: GuildRecord | null = null;
 
   try {
-    guildRecord = await getGuildForUser(client, guildId, session.user.id);
+    guildRecord = await repos.guilds.findById(guildId, session.user.id);
   } catch (lookupError) {
     console.error("Error fetching guild record:", lookupError);
     throw new GuildDetailError("guild_lookup_failed", 500);
@@ -110,21 +106,12 @@ export const loadGuildDetail = async (
       if (discordName && discordName !== (guildRecord.name ?? guildRecord.guild_id)) {
         try {
           if (guildRecord.installer_user_id) {
-            await updateGuildRecord(client, {
-              guildId,
-              installerUserId: guildRecord.installer_user_id,
+            await repos.guilds.updateName(guildId, guildRecord.installer_user_id, discordName);
+            guildRecord = {
+              ...guildRecord,
               name: discordName,
-            });
-          } else {
-            await client
-              .from("guilds")
-              .update({ name: discordName })
-              .eq("guild_id", guildId);
+            };
           }
-          guildRecord = {
-            ...guildRecord,
-            name: discordName,
-          };
         } catch (updateError) {
           console.warn("Unable to persist guild name", updateError);
         }
@@ -138,7 +125,7 @@ export const loadGuildDetail = async (
 
   if (options?.includeTasks ?? true) {
     try {
-      const guildTasks = await getRecentGuildTasks(client, guildUuid);
+      const guildTasks = await repos.tasks.findRecentByGuild(guildUuid);
       tasks = guildTasks.map((task) => ({
         id: task.id,
         prompt: task.prompt,

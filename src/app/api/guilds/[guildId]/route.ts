@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/schema";
-import { sanitizeGuildPermissions, updateGuildRecord } from "@/lib/supabase/guilds";
+import { createRepositories } from "@/lib/db/repositories";
+import { sanitizeGuildPermissions } from "@/lib/supabase/guilds";
 import { loadGuildDetail, GuildDetailError } from "@/lib/guilds/service";
 import { normalizeGuildId } from "@/lib/guilds/validation";
 import type { GuildPermissions } from "@/lib/supabase/schema";
@@ -147,10 +148,10 @@ export async function PATCH(
     return NextResponse.json({ error: "no_updates_provided" }, { status: 400 });
   }
 
+  const repos = createRepositories(supabase);
+
   try {
-    await updateGuildRecord(supabase, {
-      guildId,
-      installerUserId: data.session.user.id,
+    await repos.guilds.update(guildId, data.session.user.id, {
       defaultRepo: updates.defaultRepo,
       defaultBranch: updates.defaultBranch,
       defaultJulesApiKey: updates.defaultJulesApiKey,

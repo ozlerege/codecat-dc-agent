@@ -2,6 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
+import { env, hasDiscordAppId } from "@/lib/config/env";
+import { getDiscordBotInviteUrl } from "@/lib/config/constants";
 
 type InviteBotButtonProps = {
   className?: string;
@@ -9,30 +11,16 @@ type InviteBotButtonProps = {
   guildId?: string;
 };
 
-const PERMISSIONS = 268435456; // Manage Roles permission
-
 export const InviteBotButton = ({
   className,
   label = "Invite Bot",
   guildId,
 }: InviteBotButtonProps) => {
-  const clientId =
-    process.env.NEXT_PUBLIC_DISCORD_APP_ID ||
-    process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
-
-  if (!clientId) {
+  if (!hasDiscordAppId()) {
     return null;
   }
 
-  const inviteUrl = new URL("https://discord.com/oauth2/authorize");
-  inviteUrl.searchParams.set("client_id", clientId);
-  inviteUrl.searchParams.set("scope", "bot applications.commands");
-  inviteUrl.searchParams.set("permissions", String(PERMISSIONS));
-
-  if (guildId) {
-    inviteUrl.searchParams.set("guild_id", guildId);
-    inviteUrl.searchParams.set("disable_guild_select", "true");
-  }
+  const inviteUrl = getDiscordBotInviteUrl(env.NEXT_PUBLIC_DISCORD_APP_ID, guildId);
 
   return (
     <Button asChild variant="secondary" className={className}>

@@ -66,12 +66,10 @@ const SidebarNav = () => {
   });
   const { close } = useSidebar();
 
-  console.log("detailQuery.data", detailQuery.data);
   const sidebarGuild = detailQuery.data?.guild ?? initialDetail.guild;
   const avatarUrl = getGuildIconUrl(guildId, guildIcon ?? sidebarGuild.icon);
   const displayName = sidebarGuild.name;
 
-  console.log(sidebarGuild);
   return (
     <Sidebar className="bg-muted/40">
       <div className="flex h-full flex-col">

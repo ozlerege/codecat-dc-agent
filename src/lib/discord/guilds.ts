@@ -1,5 +1,7 @@
 import type { SupabaseClient, Session } from "@supabase/supabase-js";
 
+import { DISCORD_CONFIG } from "@/lib/config/constants";
+
 export type DiscordGuild = {
   id: string;
   name: string;
@@ -7,9 +9,6 @@ export type DiscordGuild = {
   owner?: boolean;
   permissions?: string | null;
 };
-
-export const ADMIN_PERMISSION_BIT = BigInt(1) << BigInt(3);
-const DEFAULT_DISCORD_AVATAR = "https://cdn.discordapp.com/embed/avatars/0.png";
 
 type TypedSupabaseClient = SupabaseClient;
 
@@ -21,7 +20,7 @@ export const getGuildIconUrl = (
     return `https://cdn.discordapp.com/icons/${guildId}/${icon}.png?size=128`;
   }
 
-  return DEFAULT_DISCORD_AVATAR;
+  return DISCORD_CONFIG.cdn.defaultAvatar;
 };
 
 export const buildGuildIconUrl = (guild: DiscordGuild) => {
@@ -39,7 +38,7 @@ export const userIsAdminInGuild = (guild: DiscordGuild) => {
 
   try {
     const permissionBits = BigInt(guild.permissions);
-    return (permissionBits & ADMIN_PERMISSION_BIT) === ADMIN_PERMISSION_BIT;
+    return (permissionBits & DISCORD_CONFIG.permissions.adminBit) === DISCORD_CONFIG.permissions.adminBit;
   } catch (error) {
     console.error("Failed to parse guild permissions:", error);
     return false;

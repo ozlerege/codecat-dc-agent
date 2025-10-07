@@ -2,12 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/schema";
-import {
-  getGuildRecordsByIds,
-  createGuildRecord,
-  sanitizeGuildPermissions,
-  DEFAULT_DB_GUILD_PERMISSIONS,
-} from "@/lib/supabase/guilds";
+import { createRepositories } from "@/lib/db/repositories";
+import { sanitizeGuildPermissions } from "@/lib/supabase/guilds";
+import { GUILD_CONFIG } from "@/lib/config/constants";
 import { fetchAdminGuilds } from "@/lib/discord/guilds";
 import { getUserDisplayName } from "@/lib/users/display-name";
 
@@ -22,13 +19,14 @@ export async function GET() {
   }
 
   const { session, guilds } = await fetchAdminGuilds(supabase, data.session);
+  const repos = createRepositories(supabase);
 
   const guildIds = guilds.map((guild) => guild.id);
   let storedGuilds: { guild_id: string }[] = [];
 
   if (guildIds.length > 0) {
     try {
-      storedGuilds = await getGuildRecordsByIds(supabase, guildIds);
+      storedGuilds = await repos.guilds.findByIds(guildIds);
     } catch (guildsError) {
       console.error("Error fetching guild records:", guildsError);
       return NextResponse.json(
@@ -92,11 +90,13 @@ export async function POST(request: Request) {
 
   const permissions =
     permissionsInput === undefined
-      ? DEFAULT_DB_GUILD_PERMISSIONS
+      ? GUILD_CONFIG.defaultPermissions
       : sanitizeGuildPermissions(permissionsInput);
 
+  const repos = createRepositories(supabase);
+
   try {
-    await createGuildRecord(supabase, {
+    await repos.guilds.create({
       guildId,
       installerUserId: data.session.user.id,
       name:

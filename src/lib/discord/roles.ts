@@ -7,14 +7,10 @@ export type DiscordRole = {
   mentionable: boolean;
 };
 
-export const fetchDiscordRoles = async (guildId: string) => {
-  const botToken = process.env.DISCORD_BOT_TOKEN;
+import { requireDiscordBotToken } from "@/lib/config/env";
 
-  if (!botToken) {
-    throw new Error(
-      "Discord bot token is not configured. Please set DISCORD_BOT_TOKEN environment variable."
-    );
-  }
+export const fetchDiscordRoles = async (guildId: string) => {
+  const botToken = requireDiscordBotToken();
 
   // Validate token format (Discord bot tokens typically start with specific patterns)
   if (!botToken.match(/^[A-Za-z0-9._-]+$/)) {

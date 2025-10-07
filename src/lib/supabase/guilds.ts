@@ -1,11 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, GuildPermissions } from "./schema";
+import { GUILD_CONFIG, TASK_CONFIG } from "@/lib/config/constants";
 
 type TypedSupabaseClient = SupabaseClient<Database>;
 
 export const DEFAULT_DB_GUILD_PERMISSIONS: GuildPermissions = {
-  create_roles: [],
-  confirm_roles: [],
+  ...GUILD_CONFIG.defaultPermissions,
 };
 
 export const sanitizeGuildPermissions = (value: unknown): GuildPermissions => {
@@ -221,7 +221,7 @@ export type GuildTask = {
 export const getRecentGuildTasks = async (
   client: TypedSupabaseClient,
   guildUuid: string,
-  limit = 10
+  limit = TASK_CONFIG.limits.default
 ) => {
   const { data, error } = await client
     .from("tasks")

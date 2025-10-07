@@ -315,27 +315,295 @@ The user asks questions about the following coding languages:
 - **DRY Principle**: Don't repeat yourself - extract common logic into reusable functions
 - **Single Responsibility**: Each function/component should do one thing well
 - **Error Handling**: Always handle errors gracefully with user-friendly messages
-- **Type Safety**: Use TypeScript for web/worker, type hints for Python
+- **Type Safety**: Strict TypeScript with no implicit any, comprehensive JSDoc comments
+- **Immutability**: Prefer const over let, use readonly when appropriate
 
-### 2. UI/UX Requirements
+### 2. Project Architecture
 
-- **Modern Design**: Use contemporary, clean interfaces with subtle animations
-- **Accessibility**: All UI must be WCAG 2.1 AA compliant
-- **Responsive**: Mobile-first design that works on all screen sizes
-- **Loading States**: Always show loading indicators for async operations
-- **Error States**: Display helpful error messages with recovery actions
+#### Tech Stack
+- **Framework**: Next.js 15.5 with App Router and Turbopack
+- **Language**: TypeScript 5 (strict mode enabled)
+- **Runtime**: React 19.1 (Server Components + Client Components)
+- **Styling**: Tailwind CSS 4 with shadcn/ui components
+- **Data Fetching**: TanStack React Query v5 (@tanstack/react-query)
+- **Database**: Supabase (PostgreSQL + Auth + Realtime)
+- **Package Manager**: Bun (for installs and scripts)
+
+#### Directory Structure
+```
+src/
+├── app/                    # Next.js App Router pages and API routes
+│   ├── api/               # API route handlers
+│   │   └── guilds/        # Guild-related endpoints
+│   ├── auth/              # Auth callback routes
+│   └── guilds/            # Guild pages (list, detail, settings)
+├── features/              # Feature-based modules (co-location)
+│   ├── auth/              # Authentication feature
+│   │   ├── components/    # Auth-specific UI components
+│   │   ├── hooks/         # Auth-specific React hooks
+│   │   ├── services/      # Auth business logic
+│   │   ├── types/         # Auth TypeScript types
+│   │   └── index.ts       # Public API exports
+│   └── guilds/            # Guild management feature
+│       ├── components/    # Guild-specific UI components
+│       ├── hooks/         # Guild React Query hooks
+│       ├── types/         # Guild TypeScript types
+│       ├── utils/         # Guild utility functions
+│       └── context.tsx    # Guild React Context
+├── components/            # Shared UI components
+│   └── ui/               # shadcn/ui components
+├── lib/                   # Shared utilities and infrastructure
+│   ├── api/              # API client and types
+│   ├── config/           # Environment and constants
+│   ├── db/               # Database layer
+│   │   └── repositories/ # Repository pattern for data access
+│   ├── discord/          # Discord API integrations
+│   ├── supabase/         # Supabase client and providers
+│   └── react-query/      # React Query configuration
+```
 
 ### 3. Component Architecture
 
-- **Modular Components**: Break UI into small, reusable components
-- **Shadcn/ui**: Use shadcn/ui components as the foundation
-- **Composition**: Build complex UIs by composing simple components
-- **Props Interface**: Define clear TypeScript interfaces for all props
-- **State Management**: Use React hooks appropriately, avoid prop drilling
+#### React Component Patterns
+
+- **Server Components by Default**: Use React Server Components unless interactivity is needed
+- **Client Components**: Add `"use client"` directive only when using hooks, event handlers, or browser APIs
+- **Modular Components**: Break UI into small, focused, reusable components
+- **Composition over Inheritance**: Build complex UIs by composing simple components
+- **Props Interface**: Define clear TypeScript interfaces/types for all props
 
 #### Component Guidelines
 
-1. **Always use Shadcn/ui components** when available
-2. **Create custom components** that extend Shadcn/ui for specific needs
-3. **Use Tailwind CSS** for styling with consistent spacing scale
-4. **Implement loading and error states** for all async operations
+```tsx
+// ✅ Good: Server Component (default)
+export async function GuildList() {
+  const guilds = await fetchGuilds();
+  return <div>{/* ... */}</div>;
+}
+
+// ✅ Good: Client Component with hooks
+"use client";
+
+export function GuildSelector() {
+  const [selected, setSelected] = useState(null);
+  return <select onChange={(e) => setSelected(e.target.value)}>{/* ... */}</select>;
+}
+
+// ✅ Good: Type-safe props with JSDoc
+type GuildCardProps = {
+  /** Guild ID from Discord */
+  guildId: string;
+  /** Guild display name */
+  name: string;
+  /** Optional guild icon URL */
+  icon?: string | null;
+};
+
+/**
+ * Displays a guild card with icon and name
+ */
+export function GuildCard({ guildId, name, icon }: GuildCardProps) {
+  return (
+    <Card>
+      {icon && <img src={icon} alt="" />}
+      <h3>{name}</h3>
+    </Card>
+  );
+}
+```
+
+### 4. UI/UX Requirements
+
+- **shadcn/ui Foundation**: Always use shadcn/ui components as the base (Button, Card, Input, etc.)
+- **Tailwind CSS**: Use Tailwind utility classes for styling, maintain consistent spacing scale
+- **Modern Design**: Clean interfaces with subtle animations using `tw-animate-css`
+- **Accessibility**: WCAG 2.1 AA compliant (semantic HTML, ARIA labels, keyboard navigation)
+- **Responsive**: Mobile-first design that adapts to all screen sizes
+- **Loading States**: Always show loading indicators (Skeleton, Spinner) for async operations
+- **Error States**: Display helpful error messages with recovery actions
+- **Dark Mode**: Support both light and dark themes
+
+### 5. Data Management
+
+#### React Query (TanStack Query)
+
+```tsx
+// ✅ Good: Custom hook with React Query
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api/client';
+
+/**
+ * Hook to fetch guilds list
+ */
+export const useGuildsQuery = () =>
+  useQuery({
+    queryKey: ['guilds'],
+    queryFn: async () => {
+      return await apiClient.get<GuildsResponse>('/api/guilds');
+    },
+  });
+
+/**
+ * Hook to update guild
+ */
+export const useUpdateGuildMutation = (guildId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: UpdateGuildInput) => {
+      return await apiClient.patch(`/api/guilds/${guildId}`, data);
+    },
+    onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ['guild', guildId] });
+      queryClient.invalidateQueries({ queryKey: ['guilds'] });
+    },
+  });
+};
+```
+
+#### API Client Pattern
+
+```tsx
+// ✅ Good: Centralized API client
+import { apiClient } from '@/lib/api/client';
+import { getErrorMessage } from '@/lib/api/types';
+
+const fetchGuilds = async (): Promise<GuildsQueryResult> => {
+  try {
+    return await apiClient.get<GuildsQueryResult>('/api/guilds');
+  } catch (error) {
+    throw new Error(getErrorMessage(error) || 'Failed to load guilds');
+  }
+};
+```
+
+### 6. Database Layer (Repository Pattern)
+
+#### Repository Pattern
+
+```tsx
+// ✅ Good: Repository with BaseRepository
+import { BaseRepository } from './base-repository';
+
+export class GuildRepository extends BaseRepository {
+  constructor(client: SupabaseClient<Database>) {
+    super(client, 'GuildRepository');
+  }
+
+  /**
+   * Find guild by ID and user ID
+   */
+  async findById(guildId: string, userId: string): Promise<GuildRecord | null> {
+    this.validateRequired({ guildId, userId }, 'findById');
+
+    try {
+      const { data, error } = await this.client
+        .from('guilds')
+        .select('*')
+        .eq('guild_id', guildId)
+        .eq('installer_user_id', userId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      this.logSuccess('findById', { guildId, userId, found: !!data });
+      return data;
+    } catch (error) {
+      this.handleError(error, 'findById', { guildId, userId });
+    }
+  }
+}
+```
+
+### 7. Type Safety
+
+#### Type Definitions
+
+```tsx
+// ✅ Good: Comprehensive type definitions with JSDoc
+/**
+ * Guild permissions structure
+ */
+export type GuildPermissionsShape = {
+  create_roles: string[];
+  confirm_roles: string[];
+};
+
+/**
+ * Guild detail with all information
+ */
+export type GuildDetail = {
+  guild: {
+    id: string;
+    name: string;
+    icon: string | null;
+    defaultRepo: string | null;
+    defaultBranch: string | null;
+    permissions: GuildPermissionsShape;
+    defaultJulesApiKeySet: boolean;
+    createdAt: string | null;
+  };
+  tasks: GuildTaskSummary[];
+};
+
+/**
+ * Custom error class for better error handling
+ */
+export class GuildDetailError extends Error {
+  constructor(
+    public code: GuildDetailErrorCode,
+    public status: number,
+    message?: string
+  ) {
+    super(message ?? code);
+    this.name = 'GuildDetailError';
+    
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, GuildDetailError);
+    }
+  }
+}
+```
+
+### 8. Feature Module Pattern
+
+#### Feature Organization
+
+Each feature should be self-contained with:
+
+1. **types/** - TypeScript type definitions
+2. **components/** - Feature-specific UI components
+3. **hooks/** - React Query hooks and custom React hooks
+4. **services/** - Business logic and API calls
+5. **utils/** - Feature-specific utility functions
+6. **index.ts** - Public API that exports what other features can use
+
+```tsx
+// features/guilds/index.ts
+export * from './types';
+export * from './hooks';
+export { GuildCard, GuildList } from './components';
+
+// Other features import from the public API
+import { useGuildsQuery, type GuildDetail } from '@/features/guilds';
+```
+
+### 9. Environment Configuration
+
+```tsx
+// ✅ Good: Type-safe environment variables
+import { env } from '@/lib/config/env';
+
+// Validated at load time - throws if missing
+const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
+
+// Check environment
+if (env.isDevelopment) {
+  console.log('Running in development mode');
+}
+
+// Helper functions
+import { requireDiscordBotToken } from '@/lib/config/env';
+const token = requireDiscordBotToken(); // Throws if not configured
+```

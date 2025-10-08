@@ -9,6 +9,8 @@ export type Database = {
           email: string | null;
           role: "admin" | "developer";
           jules_api_key: string | null;
+          github_access_token: string | null;
+          github_username: string | null;
           created_at: string;
         };
         Insert: {
@@ -18,6 +20,8 @@ export type Database = {
           email?: string | null;
           role?: "admin" | "developer";
           jules_api_key?: string | null;
+          github_access_token?: string | null;
+          github_username?: string | null;
           created_at?: string;
         };
         Update: {
@@ -27,6 +31,8 @@ export type Database = {
           email?: string | null;
           role?: "admin" | "developer";
           jules_api_key?: string | null;
+          github_access_token?: string | null;
+          github_username?: string | null;
           created_at?: string;
         };
       };
@@ -40,6 +46,10 @@ export type Database = {
           default_branch: string | null;
           permissions: GuildPermissions | null;
           default_jules_api_key: string | null;
+          github_repo_id: number | null;
+          github_repo_name: string | null;
+          github_connected: boolean | null;
+          github_access_token: string | null;
           created_at: string | null;
         };
         Insert: {
@@ -51,6 +61,10 @@ export type Database = {
           default_branch?: string | null;
           permissions?: GuildPermissions | null;
           default_jules_api_key?: string | null;
+          github_repo_id?: number | null;
+          github_repo_name?: string | null;
+          github_connected?: boolean | null;
+          github_access_token?: string | null;
           created_at?: string | null;
         };
         Update: {
@@ -62,6 +76,10 @@ export type Database = {
           default_branch?: string | null;
           permissions?: GuildPermissions | null;
           default_jules_api_key?: string | null;
+          github_repo_id?: number | null;
+          github_repo_name?: string | null;
+          github_connected?: boolean | null;
+          github_access_token?: string | null;
           created_at?: string | null;
         };
       };

@@ -72,7 +72,9 @@ const fetchGuildDetail = async (
 ): Promise<GuildDetailResult> => {
   try {
     const query = includeTasks ? "" : "?includeTasks=false";
-    return await apiClient.get<GuildDetailResult>(`/api/guilds/${guildId}${query}`);
+    return await apiClient.get<GuildDetailResult>(
+      `/api/guilds/${guildId}${query}`
+    );
   } catch (error) {
     throw new Error(getErrorMessage(error) || "Failed to load guild");
   }
@@ -100,6 +102,10 @@ type UpdateGuildInput = {
   defaultBranch?: string | null;
   defaultJulesApiKey?: string | null;
   permissions?: GuildPermissionsShape;
+  githubRepoId?: number | null;
+  githubRepoName?: string | null;
+  githubConnected?: boolean | null;
+  githubAccessToken?: string | null;
 };
 
 const updateGuild = async ({

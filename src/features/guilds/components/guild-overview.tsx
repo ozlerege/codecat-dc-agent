@@ -32,7 +32,8 @@ export const GuildOverview = ({ guild }: GuildOverviewProps) => {
 
   const getRoleLabel = (roleId: string) => roleNameLookup.get(roleId);
 
-  const isRolesLoading = (rolesQuery.isLoading || rolesQuery.isFetching) && !rolesQuery.isError;
+  const isRolesLoading =
+    (rolesQuery.isLoading || rolesQuery.isFetching) && !rolesQuery.isError;
   const hasRoleNames = roleNameLookup.size > 0;
   const shouldShowUnknownNames =
     rolesQuery.isFetched && !rolesQuery.isLoading && !hasRoleNames;
@@ -49,32 +50,43 @@ export const GuildOverview = ({ guild }: GuildOverviewProps) => {
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           <Card>
             <CardHeader>
-              <CardTitle>Default Repository</CardTitle>
+              <CardTitle>GitHub Repository</CardTitle>
               <CardDescription>
-                Target repo for generated pull requests.
+                Connected repository for Jules tasks.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Badge
+                  variant={guild.githubConnected ? "default" : "outline"}
+                  className={
+                    guild.githubConnected ? "bg-green-100 text-green-800" : ""
+                  }
+                >
+                  {guild.githubConnected ? "Connected" : "Not connected"}
+                </Badge>
+                {guild.githubRepoName && (
+                  <p className="text-sm font-medium">{guild.githubRepoName}</p>
+                )}
+                {!guild.githubConnected && (
+                  <p className="text-xs text-muted-foreground">
+                    Connect GitHub in Settings
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Legacy Repository</CardTitle>
+              <CardDescription>
+                Manual repository specification (deprecated).
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm">
                 {guild.defaultRepo ? (
                   guild.defaultRepo
-                ) : (
-                  <span className="text-muted-foreground">Not configured</span>
-                )}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Default Branch</CardTitle>
-              <CardDescription>
-                Branch used when none is provided.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm">
-                {guild.defaultBranch ? (
-                  guild.defaultBranch
                 ) : (
                   <span className="text-muted-foreground">Not configured</span>
                 )}
@@ -117,8 +129,7 @@ export const GuildOverview = ({ guild }: GuildOverviewProps) => {
             !hasRoleNames
           }
           showUnknownNames={
-            shouldShowUnknownNames &&
-            guild.permissions.create_roles.length > 0
+            shouldShowUnknownNames && guild.permissions.create_roles.length > 0
           }
         />
         <PermissionsList
@@ -132,8 +143,7 @@ export const GuildOverview = ({ guild }: GuildOverviewProps) => {
             !hasRoleNames
           }
           showUnknownNames={
-            shouldShowUnknownNames &&
-            guild.permissions.confirm_roles.length > 0
+            shouldShowUnknownNames && guild.permissions.confirm_roles.length > 0
           }
         />
       </section>

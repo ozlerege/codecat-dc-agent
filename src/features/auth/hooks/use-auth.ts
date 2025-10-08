@@ -1,38 +1,38 @@
 /**
  * useAuth Hook
- * 
+ *
  * Custom React hook for accessing authentication state and operations.
  * Provides convenient access to auth service methods and reactive state.
- * 
+ *
  * @module features/auth/hooks
  */
 
-'use client';
+"use client";
 
-import { useSupabase } from '@/lib/supabase/provider';
-import { useMutation } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
-import { authService } from '../services/auth-service';
-import { ROUTES } from '@/lib/config/constants';
-import type { SignInOptions, SignOutOptions } from '../types';
+import { useSupabase } from "@/lib/supabase/provider";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { authService } from "../services/auth-service";
+import { ROUTES } from "@/lib/config/constants";
+import type { SignInOptions, SignOutOptions } from "../types";
 
 /**
  * Custom hook for authentication
- * 
+ *
  * Provides auth state and methods for sign in/out operations.
  * Integrates with React Query for loading states and error handling.
- * 
+ *
  * @returns Auth state and methods
- * 
+ *
  * @example
  * ```tsx
  * function MyComponent() {
  *   const { session, user, isAuthenticated, signIn, signOut, isSigningIn } = useAuth();
- * 
+ *
  *   if (!isAuthenticated) {
  *     return <button onClick={() => signIn()}>Sign In</button>;
  *   }
- * 
+ *
  *   return (
  *     <div>
  *       <p>Welcome, {user?.email}</p>
@@ -51,7 +51,16 @@ export function useAuth() {
       await authService.signInWithDiscord(options);
     },
     onError: (error) => {
-      console.error('Sign in failed:', error);
+      console.error("Sign in failed:", error);
+    },
+  });
+
+  const signInWithGitHubMutation = useMutation({
+    mutationFn: async (options?: SignInOptions) => {
+      await authService.signInWithGitHub(options);
+    },
+    onError: (error) => {
+      console.error("GitHub sign in failed:", error);
     },
   });
 
@@ -65,7 +74,7 @@ export function useAuth() {
       router.refresh();
     },
     onError: (error) => {
-      console.error('Sign out failed:', error);
+      console.error("Sign out failed:", error);
     },
   });
 
@@ -74,20 +83,29 @@ export function useAuth() {
     session,
     user: session?.user ?? null,
     isAuthenticated: !!session,
-    
+
     // Sign in
     signIn: signInMutation.mutate,
     signInAsync: signInMutation.mutateAsync,
     isSigningIn: signInMutation.isPending,
     signInError: signInMutation.error,
-    
+
+    // GitHub sign in
+    signInWithGitHub: signInWithGitHubMutation.mutate,
+    signInWithGitHubAsync: signInWithGitHubMutation.mutateAsync,
+    isSigningInWithGitHub: signInWithGitHubMutation.isPending,
+    signInWithGitHubError: signInWithGitHubMutation.error,
+
     // Sign out
     signOut: signOutMutation.mutate,
     signOutAsync: signOutMutation.mutateAsync,
     isSigningOut: signOutMutation.isPending,
     signOutError: signOutMutation.error,
-    
+
     // Loading states
-    isLoading: signInMutation.isPending || signOutMutation.isPending,
+    isLoading:
+      signInMutation.isPending ||
+      signInWithGitHubMutation.isPending ||
+      signOutMutation.isPending,
   };
 }

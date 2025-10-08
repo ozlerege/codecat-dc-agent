@@ -10,7 +10,8 @@ import type { GuildPermissions } from "@/lib/supabase/schema";
 
 type TypedSupabaseClient = SupabaseClient<Database>;
 
-const createSupabaseClient = async () => (await createClient()) as TypedSupabaseClient;
+const createSupabaseClient = async () =>
+  (await createClient()) as TypedSupabaseClient;
 
 export async function GET(
   request: Request,
@@ -25,7 +26,8 @@ export async function GET(
 
   const requestUrl = new URL(request.url);
   const includeTasksParam = requestUrl.searchParams.get("includeTasks");
-  const includeTasks = includeTasksParam !== "false" && includeTasksParam !== "0";
+  const includeTasks =
+    includeTasksParam !== "false" && includeTasksParam !== "0";
 
   const supabase = await createSupabaseClient();
   const { data, error } = await supabase.auth.getSession();
@@ -41,7 +43,10 @@ export async function GET(
     return NextResponse.json(detail);
   } catch (loadError) {
     if (loadError instanceof GuildDetailError) {
-      return NextResponse.json({ error: loadError.code }, { status: loadError.status });
+      return NextResponse.json(
+        { error: loadError.code },
+        { status: loadError.status }
+      );
     }
 
     console.error("Unexpected guild detail error:", loadError);
@@ -76,10 +81,15 @@ export async function PATCH(
   }
 
   try {
-    await loadGuildDetail(supabase, data.session, guildId, { includeTasks: false });
+    await loadGuildDetail(supabase, data.session, guildId, {
+      includeTasks: false,
+    });
   } catch (loadError) {
     if (loadError instanceof GuildDetailError) {
-      return NextResponse.json({ error: loadError.code }, { status: loadError.status });
+      return NextResponse.json(
+        { error: loadError.code },
+        { status: loadError.status }
+      );
     }
 
     console.error("Unexpected guild detail error:", loadError);
@@ -91,11 +101,19 @@ export async function PATCH(
     defaultBranch: incomingBranch,
     defaultJulesApiKey: incomingDefaultKey,
     permissions: incomingPermissions,
+    githubRepoId: incomingGithubRepoId,
+    githubRepoName: incomingGithubRepoName,
+    githubConnected: incomingGithubConnected,
+    githubAccessToken: incomingGithubAccessToken,
   } = (payload ?? {}) as {
     defaultRepo?: unknown;
     defaultBranch?: unknown;
     defaultJulesApiKey?: unknown;
     permissions?: unknown;
+    githubRepoId?: unknown;
+    githubRepoName?: unknown;
+    githubConnected?: unknown;
+    githubAccessToken?: unknown;
   };
 
   const updates: {
@@ -103,6 +121,10 @@ export async function PATCH(
     defaultBranch?: string | null;
     defaultJulesApiKey?: string | null;
     permissions?: GuildPermissions;
+    githubRepoId?: number | null;
+    githubRepoName?: string | null;
+    githubConnected?: boolean | null;
+    githubAccessToken?: string | null;
   } = {};
 
   if (incomingRepo !== undefined) {
@@ -111,7 +133,10 @@ export async function PATCH(
     } else if (typeof incomingRepo === "string") {
       updates.defaultRepo = incomingRepo.trim() || null;
     } else {
-      return NextResponse.json({ error: "invalid_default_repo" }, { status: 400 });
+      return NextResponse.json(
+        { error: "invalid_default_repo" },
+        { status: 400 }
+      );
     }
   }
 
@@ -121,7 +146,10 @@ export async function PATCH(
     } else if (typeof incomingBranch === "string") {
       updates.defaultBranch = incomingBranch.trim() || null;
     } else {
-      return NextResponse.json({ error: "invalid_default_branch" }, { status: 400 });
+      return NextResponse.json(
+        { error: "invalid_default_branch" },
+        { status: 400 }
+      );
     }
   }
 
@@ -131,7 +159,10 @@ export async function PATCH(
     } else if (typeof incomingDefaultKey === "string") {
       updates.defaultJulesApiKey = incomingDefaultKey.trim() || null;
     } else {
-      return NextResponse.json({ error: "invalid_default_key" }, { status: 400 });
+      return NextResponse.json(
+        { error: "invalid_default_key" },
+        { status: 400 }
+      );
     }
   }
 
@@ -139,11 +170,67 @@ export async function PATCH(
     updates.permissions = sanitizeGuildPermissions(incomingPermissions);
   }
 
+  if (incomingGithubRepoId !== undefined) {
+    if (incomingGithubRepoId === null) {
+      updates.githubRepoId = null;
+    } else if (typeof incomingGithubRepoId === "number") {
+      updates.githubRepoId = incomingGithubRepoId;
+    } else {
+      return NextResponse.json(
+        { error: "invalid_github_repo_id" },
+        { status: 400 }
+      );
+    }
+  }
+
+  if (incomingGithubRepoName !== undefined) {
+    if (incomingGithubRepoName === null) {
+      updates.githubRepoName = null;
+    } else if (typeof incomingGithubRepoName === "string") {
+      updates.githubRepoName = incomingGithubRepoName.trim() || null;
+    } else {
+      return NextResponse.json(
+        { error: "invalid_github_repo_name" },
+        { status: 400 }
+      );
+    }
+  }
+
+  if (incomingGithubConnected !== undefined) {
+    if (incomingGithubConnected === null) {
+      updates.githubConnected = null;
+    } else if (typeof incomingGithubConnected === "boolean") {
+      updates.githubConnected = incomingGithubConnected;
+    } else {
+      return NextResponse.json(
+        { error: "invalid_github_connected" },
+        { status: 400 }
+      );
+    }
+  }
+
+  if (incomingGithubAccessToken !== undefined) {
+    if (incomingGithubAccessToken === null) {
+      updates.githubAccessToken = null;
+    } else if (typeof incomingGithubAccessToken === "string") {
+      updates.githubAccessToken = incomingGithubAccessToken.trim() || null;
+    } else {
+      return NextResponse.json(
+        { error: "invalid_github_access_token" },
+        { status: 400 }
+      );
+    }
+  }
+
   if (
     updates.defaultRepo === undefined &&
     updates.defaultBranch === undefined &&
     updates.defaultJulesApiKey === undefined &&
-    updates.permissions === undefined
+    updates.permissions === undefined &&
+    updates.githubRepoId === undefined &&
+    updates.githubRepoName === undefined &&
+    updates.githubConnected === undefined &&
+    updates.githubAccessToken === undefined
   ) {
     return NextResponse.json({ error: "no_updates_provided" }, { status: 400 });
   }
@@ -156,6 +243,10 @@ export async function PATCH(
       defaultBranch: updates.defaultBranch,
       defaultJulesApiKey: updates.defaultJulesApiKey,
       permissions: updates.permissions,
+      githubRepoId: updates.githubRepoId,
+      githubRepoName: updates.githubRepoName,
+      githubConnected: updates.githubConnected,
+      githubAccessToken: updates.githubAccessToken,
     });
   } catch (updateError) {
     console.error("Error updating guild:", updateError);
@@ -163,11 +254,16 @@ export async function PATCH(
   }
 
   try {
-    const detail = await loadGuildDetail(supabase, data.session, guildId, { includeTasks: false });
+    const detail = await loadGuildDetail(supabase, data.session, guildId, {
+      includeTasks: false,
+    });
     return NextResponse.json({ guild: detail.guild }, { status: 200 });
   } catch (loadError) {
     if (loadError instanceof GuildDetailError) {
-      return NextResponse.json({ error: loadError.code }, { status: loadError.status });
+      return NextResponse.json(
+        { error: loadError.code },
+        { status: loadError.status }
+      );
     }
 
     console.error("Unexpected guild detail error after update:", loadError);

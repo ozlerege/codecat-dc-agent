@@ -32,6 +32,9 @@ export type GuildDetail = {
       confirm_roles: string[];
     };
     defaultJulesApiKeySet: boolean;
+    githubRepoId: number | null;
+    githubRepoName: string | null;
+    githubConnected: boolean | null;
     createdAt: string | null;
   };
   tasks: {
@@ -68,6 +71,9 @@ const mapGuildRecord = (
     defaultBranch: record.default_branch,
     permissions,
     defaultJulesApiKeySet: Boolean(record.default_jules_api_key),
+    githubRepoId: record.github_repo_id,
+    githubRepoName: record.github_repo_name,
+    githubConnected: record.github_connected,
     createdAt: record.created_at,
   };
 };
@@ -103,10 +109,17 @@ export const loadGuildDetail = async (
     if (matchedGuild) {
       discordName = matchedGuild.name;
       discordIcon = matchedGuild.icon;
-      if (discordName && discordName !== (guildRecord.name ?? guildRecord.guild_id)) {
+      if (
+        discordName &&
+        discordName !== (guildRecord.name ?? guildRecord.guild_id)
+      ) {
         try {
           if (guildRecord.installer_user_id) {
-            await repos.guilds.updateName(guildId, guildRecord.installer_user_id, discordName);
+            await repos.guilds.updateName(
+              guildId,
+              guildRecord.installer_user_id,
+              discordName
+            );
             guildRecord = {
               ...guildRecord,
               name: discordName,
@@ -140,7 +153,9 @@ export const loadGuildDetail = async (
   }
 
   const nameOverride =
-    discordName && discordName !== guildRecord.guild_id ? discordName : undefined;
+    discordName && discordName !== guildRecord.guild_id
+      ? discordName
+      : undefined;
 
   return {
     guild: mapGuildRecord(guildRecord, {

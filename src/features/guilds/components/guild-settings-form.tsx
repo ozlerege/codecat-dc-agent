@@ -8,6 +8,10 @@ import type { GuildDetailResult } from "@/lib/guilds/hooks";
 import { cn } from "@/lib/utils";
 import { GuildRoleSelector } from "@/features/guilds/components/guild-role-selector";
 import type { DiscordRole } from "@/lib/discord/roles";
+import {
+  GitHubRepoSelector,
+  useGitHubConnectionStatus,
+} from "@/features/github";
 
 type GuildSettingsFormProps = {
   guild: GuildDetailResult["guild"];
@@ -17,6 +21,10 @@ type GuildSettingsFormProps = {
     defaultBranch?: string | null;
     defaultJulesApiKey?: string | null;
     permissions?: GuildDetailResult["guild"]["permissions"];
+    githubRepoId?: number | null;
+    githubRepoName?: string | null;
+    githubConnected?: boolean | null;
+    githubAccessToken?: string | null;
   }) => Promise<void>;
   availableRoles: DiscordRole[];
   isLoadingRoles: boolean;
@@ -31,31 +39,56 @@ export const GuildSettingsForm = ({
   isLoadingRoles,
   rolesWarning,
 }: GuildSettingsFormProps) => {
+  const { connected } = useGitHubConnectionStatus();
   const [defaultRepo, setDefaultRepo] = useState(guild.defaultRepo ?? "");
-  const [defaultBranch, setDefaultBranch] = useState(guild.defaultBranch ?? "");
-  const [createRoles, setCreateRoles] = useState<string[]>([...guild.permissions.create_roles]);
-  const [confirmRoles, setConfirmRoles] = useState<string[]>([...guild.permissions.confirm_roles]);
+  const [createRoles, setCreateRoles] = useState<string[]>([
+    ...guild.permissions.create_roles,
+  ]);
+  const [confirmRoles, setConfirmRoles] = useState<string[]>([
+    ...guild.permissions.confirm_roles,
+  ]);
   const [newDefaultKey, setNewDefaultKey] = useState("");
   const [clearDefaultKey, setClearDefaultKey] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedGitHubRepo, setSelectedGitHubRepo] = useState<{
+    id: number;
+    name: string;
+  } | null>(
+    guild.githubRepoId && guild.githubRepoName
+      ? { id: guild.githubRepoId, name: guild.githubRepoName }
+      : null
+  );
 
   useEffect(() => {
     setDefaultRepo(guild.defaultRepo ?? "");
-    setDefaultBranch(guild.defaultBranch ?? "");
     setCreateRoles([...guild.permissions.create_roles]);
     setConfirmRoles([...guild.permissions.confirm_roles]);
     setNewDefaultKey("");
     setClearDefaultKey(false);
-  }, [guild.defaultRepo, guild.defaultBranch, guild.permissions]);
+    setSelectedGitHubRepo(
+      guild.githubRepoId && guild.githubRepoName
+        ? { id: guild.githubRepoId, name: guild.githubRepoName }
+        : null
+    );
+  }, [
+    guild.defaultRepo,
+    guild.permissions,
+    guild.githubRepoId,
+    guild.githubRepoName,
+  ]);
 
   const hasPermissionsChanged = useMemo(() => {
     const createChanged =
       createRoles.length !== guild.permissions.create_roles.length ||
-      createRoles.some((role) => !guild.permissions.create_roles.includes(role));
+      createRoles.some(
+        (role) => !guild.permissions.create_roles.includes(role)
+      );
     const confirmChanged =
       confirmRoles.length !== guild.permissions.confirm_roles.length ||
-      confirmRoles.some((role) => !guild.permissions.confirm_roles.includes(role));
+      confirmRoles.some(
+        (role) => !guild.permissions.confirm_roles.includes(role)
+      );
 
     return {
       createChanged,
@@ -70,17 +103,15 @@ export const GuildSettingsForm = ({
 
     const payload: Parameters<typeof onSubmit>[0] = {};
     const trimmedRepo = defaultRepo.trim();
-    const trimmedBranch = defaultBranch.trim();
 
     if ((guild.defaultRepo ?? "") !== trimmedRepo) {
       payload.defaultRepo = trimmedRepo.length > 0 ? trimmedRepo : null;
     }
 
-    if ((guild.defaultBranch ?? "") !== trimmedBranch) {
-      payload.defaultBranch = trimmedBranch.length > 0 ? trimmedBranch : null;
-    }
-
-    if (hasPermissionsChanged.createChanged || hasPermissionsChanged.confirmChanged) {
+    if (
+      hasPermissionsChanged.createChanged ||
+      hasPermissionsChanged.confirmChanged
+    ) {
       payload.permissions = {
         create_roles: createRoles,
         confirm_roles: confirmRoles,
@@ -91,6 +122,24 @@ export const GuildSettingsForm = ({
       payload.defaultJulesApiKey = null;
     } else if (newDefaultKey.trim().length > 0) {
       payload.defaultJulesApiKey = newDefaultKey.trim();
+    }
+
+    // Handle GitHub repository changes
+    const currentGithubRepo =
+      guild.githubRepoId && guild.githubRepoName
+        ? { id: guild.githubRepoId, name: guild.githubRepoName }
+        : null;
+
+    if (selectedGitHubRepo !== currentGithubRepo) {
+      if (selectedGitHubRepo) {
+        payload.githubRepoId = selectedGitHubRepo.id;
+        payload.githubRepoName = selectedGitHubRepo.name;
+        payload.githubConnected = true;
+      } else {
+        payload.githubRepoId = null;
+        payload.githubRepoName = null;
+        payload.githubConnected = false;
+      }
     }
 
     if (Object.keys(payload).length === 0) {
@@ -114,7 +163,28 @@ export const GuildSettingsForm = ({
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>GitHub Integration</Label>
+          <p className="text-sm text-muted-foreground">
+            Connect your GitHub account to select a repository for Jules tasks
+          </p>
+        </div>
+
+        <GitHubRepoSelector
+          guildId={guild.id}
+          currentRepoId={guild.githubRepoId}
+          currentRepoName={guild.githubRepoName}
+          onRepoChange={(repo) => {
+            setSelectedGitHubRepo(
+              repo ? { id: repo.id, name: repo.fullName } : null
+            );
+          }}
+          disabled={isSaving}
+        />
+      </div>
+
+      {!connected && (
         <div className="space-y-2">
           <Label htmlFor="defaultRepo">Default Repository</Label>
           <Input
@@ -123,17 +193,11 @@ export const GuildSettingsForm = ({
             value={defaultRepo}
             onChange={(event) => setDefaultRepo(event.target.value)}
           />
+          <p className="text-xs text-muted-foreground">
+            Legacy field for manual repository specification
+          </p>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="defaultBranch">Default Branch</Label>
-          <Input
-            id="defaultBranch"
-            placeholder="main"
-            value={defaultBranch}
-            onChange={(event) => setDefaultBranch(event.target.value)}
-          />
-        </div>
-      </div>
+      )}
 
       <div className="grid gap-6 sm:grid-cols-2">
         <GuildRoleSelector
@@ -172,7 +236,9 @@ export const GuildSettingsForm = ({
           id="defaultKey"
           type="password"
           placeholder={
-            guild.defaultJulesApiKeySet ? "Enter new key to rotate" : "Provide a Jules API key"
+            guild.defaultJulesApiKeySet
+              ? "Enter new key to rotate"
+              : "Provide a Jules API key"
           }
           value={newDefaultKey}
           onChange={(event) => {
@@ -208,8 +274,12 @@ export const GuildSettingsForm = ({
         </div>
       </div>
 
-      {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
-      {feedbackMessage ? <p className="text-sm text-muted-foreground">{feedbackMessage}</p> : null}
+      {errorMessage ? (
+        <p className="text-sm text-destructive">{errorMessage}</p>
+      ) : null}
+      {feedbackMessage ? (
+        <p className="text-sm text-muted-foreground">{feedbackMessage}</p>
+      ) : null}
 
       <Button type="submit" disabled={isSaving}>
         {isSaving ? "Saving..." : "Save Changes"}

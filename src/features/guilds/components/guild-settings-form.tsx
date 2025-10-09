@@ -12,6 +12,8 @@ import {
   GitHubRepoSelector,
   useGitHubConnectionStatus,
 } from "@/features/github";
+import { PixelInput } from "@/components/pixel-input";
+import Link from "next/link";
 
 type GuildSettingsFormProps = {
   guild: GuildDetailResult["guild"];
@@ -179,7 +181,7 @@ export const GuildSettingsForm = ({
         </div>
         <div className="space-y-2">
           <Label htmlFor="defaultKey">Guild Jules API Key</Label>
-          <Input
+          <PixelInput
             id="defaultKey"
             type="password"
             placeholder={
@@ -197,9 +199,18 @@ export const GuildSettingsForm = ({
           />
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <span>
-              {guild.defaultJulesApiKeySet
-                ? "A guild-level key is currently configured."
-                : "No guild-level key configured."}
+              <span>
+                {guild.defaultJulesApiKeySet
+                  ? "A guild-level key is currently configured."
+                  : "No guild-level key configured. You may get a Jules API key "}
+              </span>
+              <Link
+                href="https://developers.google.com/jules/api"
+                target="_blank"
+                className="text-purple-500 underline"
+              >
+                HERE
+              </Link>
             </span>
             {guild.defaultJulesApiKeySet ? (
               <button

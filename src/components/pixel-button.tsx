@@ -14,7 +14,7 @@ export function PixelButton({
   return (
     <button
       className={cn(
-        "relative font-mono text-sm font-bold uppercase tracking-wider",
+        "relative font-mono text-sm font-bold uppercase tracking-wider cursor-pointer",
         "px-6 py-3",
         "transition-all duration-75",
         // Default variant

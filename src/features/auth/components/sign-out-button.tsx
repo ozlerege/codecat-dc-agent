@@ -1,9 +1,9 @@
 /**
  * Sign Out Button Component
- * 
+ *
  * Button component for signing out users.
  * Uses the centralized auth module for sign out operations.
- * 
+ *
  * @module features/auth/components
  */
 
@@ -15,14 +15,14 @@ import { useAuth } from "../hooks/use-auth";
 
 /**
  * Sign out button component
- * 
+ *
  * Displays a button to sign out the current user.
  * Handles loading states and automatic redirect after sign out.
- * 
+ *
  * @example
  * ```tsx
  * import { SignOutButton } from '@/features/auth/components/sign-out-button';
- * 
+ *
  * export function Header() {
  *   return (
  *     <header>

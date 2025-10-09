@@ -41,13 +41,13 @@ export function PixelBadge({
         ],
         // Success variant
         variant === "success" && [
-          "bg-primary text-primary-foreground",
+          "bg-green-500 text-white",
           "shadow-[0_0_0_2px_var(--color-border)]",
           "after:absolute after:top-0 after:right-0 after:h-1 after:w-1 after:bg-border",
         ],
         // Warning variant
         variant === "warning" && [
-          "bg-secondary text-secondary-foreground",
+          "bg-yellow-100 text-yellow-800",
           "shadow-[0_0_0_2px_var(--color-border)]",
         ],
         // Error variant

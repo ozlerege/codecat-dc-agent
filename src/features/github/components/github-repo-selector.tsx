@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+  PixelSelect,
+  PixelSelectContent,
+  PixelSelectItem,
+  PixelSelectTrigger,
+  PixelSelectValue,
+} from "@/components/pixel-select";
+import { PixelButton } from "@/components/pixel-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -109,18 +109,18 @@ export const GitHubRepoSelector = ({
     }
   };
 
-  const handleDisconnect = async () => {
-    try {
-      await connectMutation.mutateAsync({
-        repoId: null,
-        repoName: null,
-      });
-      setSelectedRepoId("none");
-      onRepoChange?.(null);
-    } catch (error) {
-      console.error("Failed to disconnect repository:", error);
-    }
-  };
+  // const handleDisconnect = async () => {
+  //   try {
+  //     await connectMutation.mutateAsync({
+  //       repoId: null,
+  //       repoName: null,
+  //     });
+  //     setSelectedRepoId("none");
+  //     onRepoChange?.(null);
+  //   } catch (error) {
+  //     console.error("Failed to disconnect repository:", error);
+  //   }
+  // };
 
   if (!connected || !hasToken) {
     return (
@@ -163,15 +163,14 @@ export const GitHubRepoSelector = ({
               "GitHub API rate limit exceeded. Please try again later."}
             {!isTokenExpired && !isRateLimited && "Failed to load repositories"}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
+          <PixelButton
+            variant="ghost"
             onClick={() => refetch()}
             className="mt-2"
             disabled={isRateLimited}
           >
             {isRateLimited ? "Rate Limited" : "Retry"}
-          </Button>
+          </PixelButton>
         </div>
       </div>
     );
@@ -206,13 +205,13 @@ export const GitHubRepoSelector = ({
       <Label>GitHub Repository</Label>
 
       <div className="flex gap-2">
-        <Select
+        <PixelSelect
           value={selectedRepoId}
           onValueChange={handleRepoChange}
           disabled={disabled || connectMutation.isPending}
         >
-          <SelectTrigger className="flex-1">
-            <SelectValue placeholder="Select a repository">
+          <PixelSelectTrigger className="flex-1">
+            <PixelSelectValue placeholder="Select a repository">
               {selectedRepo && (
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{selectedRepo.name}</span>
@@ -223,12 +222,14 @@ export const GitHubRepoSelector = ({
                   )}
                 </div>
               )}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">No repository selected</SelectItem>
+            </PixelSelectValue>
+          </PixelSelectTrigger>
+          <PixelSelectContent>
+            <PixelSelectItem value="none">
+              No repository selected
+            </PixelSelectItem>
             {data.repositories.map((repo) => (
-              <SelectItem key={repo.id} value={repo.id.toString()}>
+              <PixelSelectItem key={repo.id} value={repo.id.toString()}>
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{repo.name}</span>
                   {repo.private && (
@@ -247,12 +248,12 @@ export const GitHubRepoSelector = ({
                     </span>
                   )}
                 </div>
-              </SelectItem>
+              </PixelSelectItem>
             ))}
-          </SelectContent>
-        </Select>
+          </PixelSelectContent>
+        </PixelSelect>
 
-        {isConnected && !hasChanges && (
+        {/* {isConnected && !hasChanges && (
           <Button
             variant="outline"
             size="sm"
@@ -262,16 +263,15 @@ export const GitHubRepoSelector = ({
           >
             Disconnect
           </Button>
-        )}
+        )} */}
 
         {hasChanges && selectedRepoId && (
-          <Button
+          <PixelButton
             onClick={handleConnect}
             disabled={disabled || connectMutation.isPending}
-            size="sm"
           >
             {connectMutation.isPending ? "Connecting..." : "Connect"}
-          </Button>
+          </PixelButton>
         )}
       </div>
 

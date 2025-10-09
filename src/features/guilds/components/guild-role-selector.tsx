@@ -5,15 +5,17 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  PixelSelect,
+  PixelSelectTrigger,
+  PixelSelectValue,
+  PixelSelectContent,
+  PixelSelectItem,
+} from "@/components/pixel-select";
 import type { DiscordRole } from "@/lib/discord/roles";
 import { cn } from "@/lib/utils";
+import { PixelBadge } from "@/components/pixel-badge";
+import { PixelButton } from "@/components/pixel-button";
+import { SelectGroup } from "@/components/ui/select";
 
 type GuildRoleSelectorProps = {
   label: string;
@@ -34,12 +36,20 @@ export const GuildRoleSelector = ({
   onChange,
   disabled = false,
 }: GuildRoleSelectorProps) => {
-  const [selectedRole, setSelectedRole] = useState<string | undefined>(undefined);
+  const [selectedRole, setSelectedRole] = useState<string | undefined>(
+    undefined
+  );
 
-  const orderedRoles = useMemo(() => [...roles].sort((a, b) => b.position - a.position), [roles]);
+  const orderedRoles = useMemo(
+    () => [...roles].sort((a, b) => b.position - a.position),
+    [roles]
+  );
 
   useEffect(() => {
-    if (selectedRole && !orderedRoles.some((role) => role.id === selectedRole)) {
+    if (
+      selectedRole &&
+      !orderedRoles.some((role) => role.id === selectedRole)
+    ) {
       setSelectedRole(undefined);
     }
   }, [orderedRoles, selectedRole]);
@@ -66,24 +76,28 @@ export const GuildRoleSelector = ({
         ) : null}
       </div>
 
-      <Select
+      <PixelSelect
         value={selectedRole}
         onValueChange={handleSelectRole}
         disabled={disabled || orderedRoles.length === 0}
       >
-        <SelectTrigger aria-label={label}>
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent>
+        <PixelSelectTrigger aria-label={label}>
+          <PixelSelectValue placeholder={placeholder} />
+        </PixelSelectTrigger>
+        <PixelSelectContent>
           <SelectGroup>
             {orderedRoles.map((role) => (
-              <SelectItem key={role.id} value={role.id} disabled={value.includes(role.id)}>
+              <PixelSelectItem
+                key={role.id}
+                value={role.id}
+                disabled={value.includes(role.id)}
+              >
                 {role.name}
-              </SelectItem>
+              </PixelSelectItem>
             ))}
           </SelectGroup>
-        </SelectContent>
-      </Select>
+        </PixelSelectContent>
+      </PixelSelect>
 
       <div
         className={cn(
@@ -95,22 +109,27 @@ export const GuildRoleSelector = ({
           <span>No roles selected.</span>
         ) : (
           value.map((roleId) => {
-            const role = orderedRoles.find((candidate) => candidate.id === roleId);
+            const role = orderedRoles.find(
+              (candidate) => candidate.id === roleId
+            );
             const roleLabel = role ? role.name : roleId;
 
             return (
-              <Badge key={roleId} variant="secondary" className="gap-2">
-                <span>{roleLabel}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveRole(roleId)}
-                  className="rounded-full bg-secondary-foreground/10 px-2 py-0.5 text-xs text-secondary-foreground hover:bg-secondary-foreground/20"
-                  disabled={disabled}
-                  aria-label={`Remove role ${roleLabel}`}
-                >
-                  Remove
-                </button>
-              </Badge>
+              <PixelBadge key={roleId} variant="outline">
+                <div className="flex items-center gap-2">
+                  <span>{roleLabel}</span>
+                  <PixelButton
+                    type="button"
+                    variant="ghost"
+                    onClick={() => handleRemoveRole(roleId)}
+                    className="pr-0 px-2 py-0.5 text-xs text-secondary-foreground hover:bg-secondary-foreground/20"
+                    disabled={disabled}
+                    aria-label={`Remove role ${roleLabel}`}
+                  >
+                    X
+                  </PixelButton>
+                </div>
+              </PixelBadge>
             );
           })
         )}

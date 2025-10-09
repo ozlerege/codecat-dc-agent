@@ -132,7 +132,6 @@ const GuildSidebar = () => {
       </SidebarHeader>
       <SidebarContent className="flex flex-col gap-6">
         <SidebarSection>
-          <SidebarSectionLabel>Management</SidebarSectionLabel>
           <TooltipProvider delayDuration={0}>
             <SidebarMenu>
               {navItems.map((item) => {

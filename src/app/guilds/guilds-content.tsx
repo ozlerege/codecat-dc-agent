@@ -5,7 +5,8 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { SelectGuildButton } from "./select-guild-button";
 import { useCreateGuildMutation, useGuildsQuery } from "@/lib/guilds/hooks";
 import { buildGuildIconUrl } from "@/lib/discord/guilds";
-import { Button } from "@/components/ui/button";
+import { PixelButton } from "@/components/pixel-button";
+import { PixelCard, PixelCardContent } from "@/components/pixel-card";
 
 type GuildsContentProps = {
   initialUserName: string;
@@ -102,7 +103,11 @@ type GuildSectionProps = {
   description: string;
   guilds: { id: string; name: string; icon: string | null }[];
   emptyMessage: string;
-  renderAction?: (guild: { id: string; name: string; icon: string | null }) => ReactNode;
+  renderAction?: (guild: {
+    id: string;
+    name: string;
+    icon: string | null;
+  }) => ReactNode;
 };
 
 const GuildSection = ({
@@ -126,37 +131,30 @@ const GuildSection = ({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {guilds.map((guild) => (
-            <div
-              key={guild.id}
-              className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-4"
-            >
-              <div className="flex items-center gap-4">
-                <img
-                  src={buildGuildIconUrl(guild)}
-                  alt={`${guild.name} icon`}
-                  className="h-12 w-12 rounded-full border object-cover"
-                />
-                <div>
-                  <h3 className="text-lg font-semibold leading-none">
-                    {guild.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    ID: {guild.id}
-                  </p>
+            <PixelCard key={guild.id} title={guild.name}>
+              <PixelCardContent>
+                <div className="flex items-center gap-4">
+                  <img
+                    src={buildGuildIconUrl(guild)}
+                    alt={`${guild.name} icon`}
+                    className="h-12 w-12 rounded-full border object-cover"
+                  />
+                  <div>
+                    <h3 className="text-sm font-semibold leading-none">
+                      {guild.name}
+                    </h3>
+                  </div>
                 </div>
-              </div>
+              </PixelCardContent>
 
               {renderAction ? (
                 <div className="pt-2">{renderAction(guild)}</div>
               ) : (
-                <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-                  <span>This server is already configured.</span>
-                  <Button asChild size="sm" variant="outline" className="w-fit">
-                    <Link href={`/guilds/${guild.id}`}>View details</Link>
-                  </Button>
-                </div>
+                <PixelButton variant="ghost" className="w-full mt-4">
+                  <Link href={`/guilds/${guild.id}`}>View details</Link>
+                </PixelButton>
               )}
-            </div>
+            </PixelCard>
           ))}
         </div>
       )}

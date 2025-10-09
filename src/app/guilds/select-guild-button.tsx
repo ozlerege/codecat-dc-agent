@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { PixelButton } from "@/components/pixel-button";
 
 type SelectGuildButtonProps = {
   label?: string;
@@ -16,13 +16,14 @@ export function SelectGuildButton({
   onSelect,
 }: SelectGuildButtonProps) {
   return (
-    <Button
+    <PixelButton
       type="button"
       disabled={disabled || isLoading}
-      className="w-full sm:w-auto"
       onClick={onSelect}
+      className="w-full mt-4"
+      variant="ghost"
     >
       {isLoading ? "Selecting..." : label}
-    </Button>
+    </PixelButton>
   );
 }

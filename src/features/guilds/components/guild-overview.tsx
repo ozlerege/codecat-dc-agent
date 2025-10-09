@@ -1,16 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import type { GuildDetailResult } from "@/lib/guilds/hooks";
 import { useGuildRolesQuery } from "@/lib/guilds/hooks";
 import {
@@ -30,7 +22,7 @@ type GuildOverviewProps = {
 
 export const GuildOverview = ({ guild }: GuildOverviewProps) => {
   const rolesQuery = useGuildRolesQuery(guild.id);
-
+  const router = useRouter();
   const roleNameLookup = useMemo(() => {
     if (!rolesQuery.data?.roles) {
       return new Map<string, string>();
@@ -63,46 +55,42 @@ export const GuildOverview = ({ guild }: GuildOverviewProps) => {
             <PixelCardHeader>
               <PixelCardTitle>GitHub Repository</PixelCardTitle>
               <PixelCardDescription>
-                Connected repository for Jules tasks.
+                Connected repository for Jules tasks
               </PixelCardDescription>
             </PixelCardHeader>
             <PixelCardContent>
-              <div className="space-y-2">
-                <Badge
-                  variant={guild.githubConnected ? "default" : "outline"}
-                  className={
-                    guild.githubConnected ? "bg-green-100 text-green-800" : ""
-                  }
-                >
-                  {guild.githubConnected ? "Connected" : "Not connected"}
-                </Badge>
-                {guild.githubRepoName && guild.githubConnected && (
-                  <p className="text-sm font-medium">{guild.githubRepoName}</p>
-                )}
-                {!guild.githubConnected && guild.githubRepoName && (
-                  <p className="text-xs text-muted-foreground">
-                    Connect GitHub in Settings
-                  </p>
-                )}
-              </div>
+              {guild.githubRepoName && guild.githubConnected && (
+                <PixelBadge variant="inverted">
+                  {guild.githubRepoName}
+                </PixelBadge>
+              )}
+              {!guild.githubConnected && guild.githubRepoName && (
+                <p className="text-xs text-muted-foreground">
+                  Connect GitHub in Settings
+                </p>
+              )}
             </PixelCardContent>
             <PixelCardFooter>
-              <PixelButton>
+              <PixelBadge
+                variant={guild.githubConnected ? "success" : "outline"}
+              >
                 {guild.githubConnected ? "Connected" : "Connect GitHub"}
-              </PixelButton>
+              </PixelBadge>
             </PixelCardFooter>
           </PixelCard>
 
           <PixelCard>
             <PixelCardHeader>
-              <PixelCardTitle>Guild Jules API Key</PixelCardTitle>
+              <PixelCardTitle>Jules API Key</PixelCardTitle>
               <PixelCardDescription>
-                Guild-level fallback credential.
+                Jules API key for this guild
               </PixelCardDescription>
             </PixelCardHeader>
 
             <PixelCardFooter>
-              <PixelButton>
+              <PixelButton
+                onClick={() => router.push(`/guilds/${guild.id}/settings`)}
+              >
                 {guild.defaultJulesApiKeySet ? "Connected" : "Set Api Key"}
               </PixelButton>
             </PixelCardFooter>
@@ -130,6 +118,7 @@ export const GuildOverview = ({ guild }: GuildOverviewProps) => {
           showUnknownNames={
             shouldShowUnknownNames && guild.permissions.create_roles.length > 0
           }
+          guildId={guild.id}
         />
         <PermissionsList
           title="Confirm Roles"
@@ -144,6 +133,7 @@ export const GuildOverview = ({ guild }: GuildOverviewProps) => {
           showUnknownNames={
             shouldShowUnknownNames && guild.permissions.confirm_roles.length > 0
           }
+          guildId={guild.id}
         />
       </section>
     </div>
@@ -157,6 +147,7 @@ type PermissionsListProps = {
   getLabel: (roleId: string) => string | undefined;
   isLoadingNames: boolean;
   showUnknownNames: boolean;
+  guildId: string;
 };
 
 const PermissionsList = ({
@@ -166,52 +157,63 @@ const PermissionsList = ({
   getLabel,
   isLoadingNames,
   showUnknownNames,
-}: PermissionsListProps) => (
-  <>
-    <PixelCard variant="window" title={title + ".exe"}>
-      <PixelCardHeader>
-        <PixelCardTitle>{title}</PixelCardTitle>
-      </PixelCardHeader>
-      <PixelCardContent>
-        {roleIds.length > 0 ? (
-          <ul className="grid gap-2 sm:grid-cols-8 w-full">
-            {roleIds.map((roleId) => {
-              const label = getLabel(roleId);
+  guildId,
+}: PermissionsListProps) => {
+  const router = useRouter();
 
-              return (
-                <PixelBadge key={roleId} variant="outline" className="w-full">
-                  {isLoadingNames ? (
-                    <span
-                      className="inline-flex h-4 w-24 animate-pulse rounded bg-muted-foreground/20"
-                      aria-hidden="true"
-                    />
-                  ) : label ? (
-                    label
-                  ) : (
-                    <span>
-                      <span className="sr-only">{` (${roleId})`}</span>
-                    </span>
-                  )}
-                </PixelBadge>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="text-sm text-muted-foreground">{emptyMessage}</p>
-        )}
-        {isLoadingNames ? (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Loading Discord role names…
-          </p>
-        ) : showUnknownNames && roleIds.length > 0 ? (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Role names unavailable; Discord did not return role metadata.
-          </p>
-        ) : null}
-      </PixelCardContent>
-      <PixelCardFooter>
-        <PixelButton>Edit Permissions</PixelButton>
-      </PixelCardFooter>
-    </PixelCard>
-  </>
-);
+  return (
+    <>
+      <PixelCard variant="window" title={title + ".exe"}>
+        <PixelCardHeader>
+          <PixelCardTitle>{title}</PixelCardTitle>
+        </PixelCardHeader>
+        <PixelCardContent>
+          {roleIds.length > 0 ? (
+            <ul className="grid gap-2 sm:grid-cols-8 w-full">
+              {roleIds.map((roleId) => {
+                const label = getLabel(roleId);
+
+                return (
+                  <PixelBadge key={roleId} variant="outline" className="w-full">
+                    {isLoadingNames ? (
+                      <span
+                        className="inline-flex h-4 w-24 animate-pulse rounded bg-muted-foreground/20"
+                        aria-hidden="true"
+                      />
+                    ) : label ? (
+                      label
+                    ) : (
+                      <span>
+                        <span className="sr-only">{` (${roleId})`}</span>
+                      </span>
+                    )}
+                  </PixelBadge>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+          )}
+          {isLoadingNames ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Loading Discord role names…
+            </p>
+          ) : showUnknownNames && roleIds.length > 0 ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Role names unavailable; Discord did not return role metadata.
+            </p>
+          ) : null}
+        </PixelCardContent>
+        <PixelCardFooter>
+          <PixelButton
+            onClick={() => {
+              router.push(`/guilds/${guildId}/settings`);
+            }}
+          >
+            Edit Permissions
+          </PixelButton>
+        </PixelCardFooter>
+      </PixelCard>
+    </>
+  );
+};

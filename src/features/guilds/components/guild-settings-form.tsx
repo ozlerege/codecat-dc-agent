@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { PixelButton } from "@/components/pixel-button";
 import type { GuildDetailResult } from "@/lib/guilds/hooks";
 import { cn } from "@/lib/utils";
 import { GuildRoleSelector } from "@/features/guilds/components/guild-role-selector";
@@ -260,9 +260,9 @@ export const GuildSettingsForm = ({
         <p className="text-sm text-muted-foreground">{feedbackMessage}</p>
       ) : null}
 
-      <Button type="submit" disabled={isSaving}>
+      <PixelButton variant="inverted" type="submit" disabled={isSaving}>
         {isSaving ? "Saving..." : "Save Changes"}
-      </Button>
+      </PixelButton>
     </form>
   );
 };

@@ -113,7 +113,7 @@ export const SidebarProvider = ({
     <SidebarContext.Provider value={value}>
       <div
         data-state={open ? "open" : "closed"}
-        className="flex min-h-screen w-full bg-background text-foreground font-mono"
+        className="flex h-screen w-full min-h-0 min-w-0 overflow-hidden bg-background text-foreground font-mono lg:[height:100dvh]"
       >
         {children}
       </div>
@@ -192,7 +192,7 @@ export const Sidebar = React.forwardRef<SidebarElement, SidebarProps>(
           data-state={open ? "open" : "closed"}
           data-collapsed={collapsed ? "true" : "false"}
           className={cn(
-            "group/sidebar relative fixed inset-y-0 left-0 z-50 flex w-64 min-w-[16rem] -translate-x-full flex-col overflow-hidden border-r-4 border-border bg-card text-card-foreground font-mono lg:flex-shrink-0",
+            "group/sidebar relative fixed inset-y-0 left-0 z-50 flex h-full w-64 min-w-[16rem] -translate-x-full flex-col overflow-hidden border-r-4 border-border bg-card text-card-foreground font-mono lg:h-full lg:flex-shrink-0",
             "shadow-[0_0_0_4px_var(--color-border)] before:pointer-events-none before:absolute before:inset-0 before:shadow-[inset_4px_4px_0_rgba(0,0,0,0.12)]",
             "transition-all duration-300 ease-in-out data-[state=open]:translate-x-0 lg:static lg:z-0 lg:translate-x-0",
             "data-[collapsed=true]:w-[5.25rem] data-[collapsed=true]:min-w-[5.25rem] data-[collapsed=true]:max-w-[5.25rem]",
@@ -221,7 +221,7 @@ type SidebarInsetProps = React.HTMLAttributes<HTMLDivElement>;
 export const SidebarInset = ({ className, ...props }: SidebarInsetProps) => (
   <div
     className={cn(
-      "flex flex-1 flex-col bg-muted/30 font-mono lg:bg-background",
+      "flex flex-1 min-h-0 min-w-0 flex-col overflow-hidden bg-muted/30 font-mono lg:bg-background",
       className
     )}
     {...props}
@@ -255,7 +255,7 @@ export const SidebarContent = ({
   return (
     <div
       className={cn(
-        "flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 font-mono transition-all duration-300",
+        "flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 py-4 font-mono transition-all duration-300",
         collapsed && "px-2",
         className
       )}
@@ -273,7 +273,7 @@ export const SidebarFooter = ({
   return (
     <div
       className={cn(
-        "border-t-4 border-border px-4 py-4 font-mono",
+        "shrink-0 border-t-4 border-border px-4 py-4 font-mono",
         collapsed && "px-2",
         className
       )}

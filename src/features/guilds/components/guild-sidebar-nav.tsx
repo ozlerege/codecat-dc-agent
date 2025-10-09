@@ -18,6 +18,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
   SidebarProvider,
   SidebarSection,
   SidebarSectionLabel,
@@ -35,6 +36,7 @@ import { getGuildIconUrl } from "@/lib/discord/guilds";
 import { useGuildDetailQuery } from "@/lib/guilds/hooks";
 import { useGuildRouteContext } from "../context";
 import { cn } from "@/lib/utils";
+import { InviteBotButton } from "./invite-bot-button";
 
 type NavItem = {
   readonly id: string;
@@ -182,6 +184,31 @@ const GuildSidebar = () => {
           </TooltipProvider>
         </SidebarSection>
       </SidebarContent>
+      <SidebarFooter className="pt-6">
+        {collapsed ? (
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <InviteBotButton
+                  guildId={guildId}
+                  label="Invite Bot To Discord"
+                  className="w-full"
+                  hideLabel
+                />
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                Invite Bot To Discord
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <InviteBotButton
+            guildId={guildId}
+            label="Invite Bot To Discord"
+            className="w-full"
+          />
+        )}
+      </SidebarFooter>
     </Sidebar>
   );
 };

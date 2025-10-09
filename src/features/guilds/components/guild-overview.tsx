@@ -22,6 +22,7 @@ import {
   PixelCardTitle,
 } from "@/components/pixel-card";
 import { PixelButton } from "@/components/pixel-button";
+import { PixelBadge } from "@/components/pixel-badge";
 
 type GuildOverviewProps = {
   guild: GuildDetailResult["guild"];
@@ -173,16 +174,12 @@ const PermissionsList = ({
       </PixelCardHeader>
       <PixelCardContent>
         {roleIds.length > 0 ? (
-          <ul className="grid gap-2 sm:grid-cols-2">
+          <ul className="grid gap-2 sm:grid-cols-8 w-full">
             {roleIds.map((roleId) => {
               const label = getLabel(roleId);
 
               return (
-                <li
-                  key={roleId}
-                  className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground"
-                  title={showUnknownNames ? `Role ID ${roleId}` : undefined}
-                >
+                <PixelBadge key={roleId} variant="outline" className="w-full">
                   {isLoadingNames ? (
                     <span
                       className="inline-flex h-4 w-24 animate-pulse rounded bg-muted-foreground/20"
@@ -192,11 +189,10 @@ const PermissionsList = ({
                     label
                   ) : (
                     <span>
-                      Unknown role
                       <span className="sr-only">{` (${roleId})`}</span>
                     </span>
                   )}
-                </li>
+                </PixelBadge>
               );
             })}
           </ul>
@@ -214,7 +210,7 @@ const PermissionsList = ({
         ) : null}
       </PixelCardContent>
       <PixelCardFooter>
-        <PixelButton>View or Edit Permissions</PixelButton>
+        <PixelButton>Edit Permissions</PixelButton>
       </PixelCardFooter>
     </PixelCard>
   </>

@@ -163,41 +163,64 @@ export const GuildSettingsForm = ({
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
-      <div className="space-y-4">
+      <div className="grid gap-6 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>GitHub Integration</Label>
-          <p className="text-sm text-muted-foreground">
-            Connect your GitHub account to select a repository for Jules tasks
-          </p>
-        </div>
-
-        <GitHubRepoSelector
-          guildId={guild.id}
-          currentRepoId={guild.githubRepoId}
-          currentRepoName={guild.githubRepoName}
-          onRepoChange={(repo) => {
-            setSelectedGitHubRepo(
-              repo ? { id: repo.id, name: repo.fullName } : null
-            );
-          }}
-          disabled={isSaving}
-        />
-      </div>
-
-      {!connected && (
-        <div className="space-y-2">
-          <Label htmlFor="defaultRepo">Default Repository</Label>
-          <Input
-            id="defaultRepo"
-            placeholder="owner/repository"
-            value={defaultRepo}
-            onChange={(event) => setDefaultRepo(event.target.value)}
+          <GitHubRepoSelector
+            guildId={guild.id}
+            currentRepoId={guild.githubRepoId}
+            currentRepoName={guild.githubRepoName}
+            onRepoChange={(repo) => {
+              setSelectedGitHubRepo(
+                repo ? { id: repo.id, name: repo.fullName } : null
+              );
+            }}
+            disabled={isSaving}
           />
-          <p className="text-xs text-muted-foreground">
-            Legacy field for manual repository specification
-          </p>
         </div>
-      )}
+        <div className="space-y-2">
+          <Label htmlFor="defaultKey">Guild Jules API Key</Label>
+          <Input
+            id="defaultKey"
+            type="password"
+            placeholder={
+              guild.defaultJulesApiKeySet
+                ? "Enter new key to rotate"
+                : "Provide a Jules API key"
+            }
+            value={newDefaultKey}
+            onChange={(event) => {
+              setNewDefaultKey(event.target.value);
+              if (event.target.value.length > 0) {
+                setClearDefaultKey(false);
+              }
+            }}
+          />
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+            <span>
+              {guild.defaultJulesApiKeySet
+                ? "A guild-level key is currently configured."
+                : "No guild-level key configured."}
+            </span>
+            {guild.defaultJulesApiKeySet ? (
+              <button
+                type="button"
+                className={cn(
+                  "rounded-md border border-dashed px-3 py-1 text-xs font-medium transition-colors",
+                  clearDefaultKey
+                    ? "border-destructive text-destructive"
+                    : "hover:border-destructive hover:text-destructive"
+                )}
+                onClick={() => {
+                  setClearDefaultKey((state) => !state);
+                  setNewDefaultKey("");
+                }}
+              >
+                {clearDefaultKey ? "Will remove key" : "Remove key"}
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </div>
 
       <div className="grid gap-6 sm:grid-cols-2">
         <GuildRoleSelector
@@ -229,50 +252,6 @@ export const GuildSettingsForm = ({
           No Discord roles available. Verify the bot has access to this guild.
         </p>
       ) : null}
-
-      <div className="space-y-2">
-        <Label htmlFor="defaultKey">Guild Jules API Key</Label>
-        <Input
-          id="defaultKey"
-          type="password"
-          placeholder={
-            guild.defaultJulesApiKeySet
-              ? "Enter new key to rotate"
-              : "Provide a Jules API key"
-          }
-          value={newDefaultKey}
-          onChange={(event) => {
-            setNewDefaultKey(event.target.value);
-            if (event.target.value.length > 0) {
-              setClearDefaultKey(false);
-            }
-          }}
-        />
-        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-          <span>
-            {guild.defaultJulesApiKeySet
-              ? "A guild-level key is currently configured."
-              : "No guild-level key configured."}
-          </span>
-          {guild.defaultJulesApiKeySet ? (
-            <button
-              type="button"
-              className={cn(
-                "rounded-md border border-dashed px-3 py-1 text-xs font-medium transition-colors",
-                clearDefaultKey
-                  ? "border-destructive text-destructive"
-                  : "hover:border-destructive hover:text-destructive"
-              )}
-              onClick={() => {
-                setClearDefaultKey((state) => !state);
-                setNewDefaultKey("");
-              }}
-            >
-              {clearDefaultKey ? "Will remove key" : "Remove key"}
-            </button>
-          ) : null}
-        </div>
-      </div>
 
       {errorMessage ? (
         <p className="text-sm text-destructive">{errorMessage}</p>

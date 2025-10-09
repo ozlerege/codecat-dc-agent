@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import {
   useGitHubRepositoriesQuery,
   useConnectGitHubRepoMutation,
@@ -195,6 +196,11 @@ export const GitHubRepoSelector = ({
   const isConnected = currentRepoId && currentRepoName;
   const hasChanges = selectedRepoId !== (currentRepoId?.toString() ?? "none");
 
+  // Find the currently selected repository
+  const selectedRepo = data?.repositories.find(
+    (repo) => repo.id.toString() === selectedRepoId
+  );
+
   return (
     <div className={cn("space-y-2", className)}>
       <Label>GitHub Repository</Label>
@@ -206,7 +212,18 @@ export const GitHubRepoSelector = ({
           disabled={disabled || connectMutation.isPending}
         >
           <SelectTrigger className="flex-1">
-            <SelectValue placeholder="Select a repository" />
+            <SelectValue placeholder="Select a repository">
+              {selectedRepo && (
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{selectedRepo.name}</span>
+                  {selectedRepo.private && (
+                    <Badge variant="destructive" className="text-xs text-white">
+                      Private
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="none">No repository selected</SelectItem>
@@ -215,7 +232,14 @@ export const GitHubRepoSelector = ({
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{repo.name}</span>
                   {repo.private && (
-                    <span className="text-xs text-muted-foreground">🔒</span>
+                    <span className="text-xs text-muted-foreground">
+                      <Badge
+                        variant="destructive"
+                        className="text-xs text-white"
+                      >
+                        Private
+                      </Badge>
+                    </span>
                   )}
                   {repo.language && (
                     <span className="text-xs text-muted-foreground">

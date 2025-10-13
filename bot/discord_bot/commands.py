@@ -65,4 +65,13 @@ def register_commands(bot: CodeCatBot) -> None:
     ) -> None:
         await bot.handle_update_command(interaction=interaction)
 
+    @bot.tree.command(
+        name="help",
+        description="Show CodeCat commands available to you.",
+    )
+    async def help_command(
+        interaction: discord.Interaction[discord.Client],
+    ) -> None:
+        await bot.handle_help_command(interaction=interaction)
+
     logger.info("Registered slash commands.")

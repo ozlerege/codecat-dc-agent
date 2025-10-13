@@ -196,9 +196,7 @@ export const GuildSettingsForm = ({
   );
 
   const modelsErrorMessage =
-    isModelsError && modelsError instanceof Error
-      ? modelsError.message
-      : null;
+    isModelsError && modelsError instanceof Error ? modelsError.message : null;
 
   const hasPermissionsChanged = useMemo(() => {
     const createChanged =
@@ -278,7 +276,9 @@ export const GuildSettingsForm = ({
 
     try {
       await onSubmit(payload);
-      setFeedbackMessage("Guild settings updated.");
+      setFeedbackMessage(
+        "Guild settings updated. Make sure you run /update command on Discord server to apply the changes."
+      );
       setNewDefaultKey("");
       setClearDefaultKey(false);
     } catch (submissionError) {

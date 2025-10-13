@@ -288,7 +288,10 @@ class CodeCatBot(discord.Client):
         }
 
         role_ids = [str(role.id) for role in getattr(member, "roles", [])]
-        if not user_has_permission(role_ids, guild_permissions, "create"):
+        has_create = user_has_permission(role_ids, guild_permissions, "create")
+        has_confirm = user_has_permission(role_ids, guild_permissions, "confirm")
+
+        if not has_create and not has_confirm:
             await interaction.response.send_message(
                 "You do not have permission to connect GitHub for CodeCat tasks.",
                 ephemeral=True,
@@ -437,6 +440,23 @@ class CodeCatBot(discord.Client):
         create_roles = permissions.get("create_roles") or []
         confirm_roles = permissions.get("confirm_roles") or []
 
+        member: discord.Member
+        if isinstance(interaction.user, discord.Member):
+            member = interaction.user
+        else:
+            member = await interaction.guild.fetch_member(interaction.user.id)
+
+        role_ids = [str(role.id) for role in getattr(member, "roles", [])]
+        has_create = user_has_permission(role_ids, permissions, "create") if permissions else False
+        has_confirm = user_has_permission(role_ids, permissions, "confirm") if permissions else False
+
+        if not has_create and not has_confirm:
+            await interaction.followup.send(
+                "You do not have permission to view CodeCat configuration for this guild.",
+                ephemeral=True,
+            )
+            return
+
         if not repo:
             await interaction.followup.send(
                 "No GitHub repository is currently linked for this guild.",
@@ -460,6 +480,109 @@ class CodeCatBot(discord.Client):
         details = "\n".join(lines)
 
         await interaction.followup.send(details, ephemeral=True)
+
+    async def handle_help_command(
+        self,
+        *,
+        interaction: discord.Interaction[discord.Client],
+    ) -> None:
+        """Display available bot commands based on user permissions."""
+
+        if interaction.guild is None or interaction.guild_id is None:
+            await interaction.response.send_message(
+                "This command can only be used inside a Discord server.",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True, thinking=True)
+
+        guild_id = str(interaction.guild_id)
+        try:
+            guild_record = await self.supabase.get_guild_by_discord_id(guild_id)
+        except SupabaseServiceError as exc:
+            logger.exception("Failed to load guild %s for help command: %s", guild_id, exc)
+            await interaction.followup.send(
+                "Unable to load guild configuration right now. Please try again later.",
+                ephemeral=True,
+            )
+            return
+
+        if not guild_record:
+            await interaction.followup.send(
+                "This guild is not configured in the dashboard yet.",
+                ephemeral=True,
+            )
+            return
+
+        permissions = guild_record.get("permissions") or {
+            "create_roles": [],
+            "confirm_roles": [],
+        }
+
+        member: discord.Member
+        if isinstance(interaction.user, discord.Member):
+            member = interaction.user
+        else:
+            member = await interaction.guild.fetch_member(interaction.user.id)
+
+        role_ids = [str(role.id) for role in getattr(member, "roles", [])]
+        has_create = user_has_permission(role_ids, permissions, "create")
+        has_confirm = user_has_permission(role_ids, permissions, "confirm")
+
+        if not has_create and not has_confirm:
+            await interaction.followup.send(
+                "You do not have permission to use CodeCat commands. Ask an admin to assign a create or confirm role to you.",
+                ephemeral=True,
+            )
+            return
+
+        bullet_lines = []
+
+        bullet_lines.append(
+            "• `/codecat <branch> <task> [repo]` – Propose a CodeCat task in the configured repository."
+        )
+
+        bullet_lines.append(
+            "• `/connect-github` – Link your GitHub account so CodeCat can open PRs on your behalf."
+        )
+        bullet_lines.append(
+            "  ⮡ The GitHub user you connect must have push access to the configured repository."
+        )
+
+        bullet_lines.append(
+            "• `/current_repo` – View the current repository, branch, and permission settings."
+        )
+
+        bullet_lines.append(
+            "• `/help` – Show this help menu."
+        )
+
+        if interaction.guild.owner_id == interaction.user.id:
+            bullet_lines.append(
+                "• `/update` – (Server owner) Re-sync role permissions for pending tasks."
+            )
+        else:
+            bullet_lines.append(
+                "• `/update` – Server owner command to refresh role permissions for pending tasks."
+            )
+
+        if has_confirm:
+            bullet_lines.append(
+                "• As a confirm-role member, your DM prompts include Confirm/Reject buttons, and tasks you create start immediately without additional approval."
+            )
+
+        if has_create and not has_confirm:
+            bullet_lines.append(
+                "• Tasks you create require a confirm-role moderator to approve them before CodeCat starts working."
+            )
+
+        bullet_lines.append(
+            "• After role changes, ask the server owner to run `/update` so permissions refresh instantly."
+        )
+
+        response = "Here are the CodeCat commands available to you:\n" + "\n".join(bullet_lines)
+        await interaction.followup.send(response, ephemeral=True)
 
     async def handle_update_command(
         self,

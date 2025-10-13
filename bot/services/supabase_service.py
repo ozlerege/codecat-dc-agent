@@ -138,6 +138,42 @@ class SupabaseService:
         data: list[UserRecord] = getattr(response, "data", []) or []
         return data[0] if data else None
 
+    async def upsert_user_github_connection(
+        self,
+        *,
+        discord_id: str,
+        discord_username: str | None,
+        github_access_token: str,
+        github_username: str,
+    ) -> UserRecord:
+        """Insert or update a user's GitHub connection details."""
+
+        payload: dict[str, Any] = {
+            "github_access_token": github_access_token,
+            "github_username": github_username,
+        }
+
+        if discord_username:
+            payload["discord_username"] = discord_username
+
+        try:
+            response = (
+                await self.client.table("users")
+                .update(payload)
+                .eq("discord_id", discord_id)
+                .execute()
+            )
+        except Exception as exc:  # noqa: BLE001
+            raise SupabaseServiceError("Failed to upsert GitHub connection") from exc
+
+        if getattr(response, "error", None):
+            raise SupabaseServiceError(response.error)
+
+        record = await self.get_user_by_discord_id(discord_id)
+        if not record:
+            raise SupabaseServiceError("Failed to load user after GitHub connection upsert")
+        return record
+
     async def get_guild_by_id(self, guild_uuid: str) -> GuildRecord | None:
         """Fetch guild by primary key UUID."""
         try:

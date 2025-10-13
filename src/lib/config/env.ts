@@ -58,6 +58,8 @@ const OPTIONAL_ENV = {
   ),
   GITHUB_CLIENT_SECRET: getOptionalEnv(process.env.GITHUB_CLIENT_SECRET),
   NEXT_PUBLIC_SITE_URL: getOptionalEnv(process.env.NEXT_PUBLIC_SITE_URL),
+  OPENROUTER_API_KEY: getOptionalEnv(process.env.OPENROUTER_API_KEY),
+  OPENROUTER_API_BASE_URL: getOptionalEnv(process.env.OPENROUTER_API_BASE_URL),
 } as const;
 
 /**

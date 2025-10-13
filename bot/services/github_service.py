@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Iterable, TypedDict
+from typing import Any, Iterable, TypedDict, cast
 
 import httpx
 
@@ -36,6 +36,28 @@ class GithubCommitPayload(TypedDict, total=False):
     branch: str
     sha: str | None
     committer: dict[str, str]
+
+
+class GithubDeviceCodeResponse(TypedDict, total=False):
+    """Response payload returned by GitHub device authorization endpoint."""
+
+    device_code: str
+    user_code: str
+    verification_uri: str
+    verification_uri_complete: str | None
+    expires_in: int
+    interval: int
+
+
+class GithubDeviceTokenResponse(TypedDict, total=False):
+    """Response payload for polling GitHub device access token."""
+
+    access_token: str
+    token_type: str
+    scope: str
+    error: str
+    error_description: str | None
+    error_uri: str | None
 
 
 @dataclass(slots=True)
@@ -98,6 +120,97 @@ class GithubService:
                 endpoint=f"/repos/{repo_full_name}/contents/{payload['path']}",
                 json_payload=payload,
             )
+
+    async def start_device_authorization(
+        self,
+        *,
+        client_id: str,
+        scope: str,
+    ) -> GithubDeviceCodeResponse:
+        """Initiate the GitHub device authorization flow."""
+
+        payload = {"client_id": client_id, "scope": scope}
+        headers = {"Accept": "application/json"}
+
+        try:
+            response = await self.client.post(
+                "https://github.com/login/device/code",
+                data=payload,
+                headers=headers,
+            )
+        except httpx.HTTPError as exc:  # noqa: BLE001
+            raise GithubServiceError("Failed to start GitHub device authorization") from exc
+
+        if response.status_code != 200:
+            raise GithubServiceError(
+                "GitHub device authorization failed "
+                f"({response.status_code}): {response.text}"
+            )
+
+        try:
+            data = cast(GithubDeviceCodeResponse, response.json())
+        except ValueError as exc:  # noqa: BLE001
+            raise GithubServiceError("Invalid response from GitHub device authorization") from exc
+
+        required_keys = ("device_code", "user_code", "verification_uri", "expires_in")
+        for key in required_keys:
+            require(data.get(key), f"github device authorization {key}")
+
+        # GitHub may omit interval; default to 5 seconds per documentation
+        data.setdefault("interval", 5)
+        return data
+
+    async def poll_device_token(
+        self,
+        *,
+        client_id: str,
+        client_secret: str,
+        device_code: str,
+    ) -> GithubDeviceTokenResponse:
+        """Poll GitHub for a device access token."""
+
+        payload = {
+            "client_id": client_id,
+            "device_code": device_code,
+            "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+            "client_secret": client_secret,
+        }
+        headers = {"Accept": "application/json"}
+
+        try:
+            response = await self.client.post(
+                "https://github.com/login/oauth/access_token",
+                data=payload,
+                headers=headers,
+            )
+        except httpx.HTTPError as exc:  # noqa: BLE001
+            raise GithubServiceError("Failed to poll GitHub device token") from exc
+
+        try:
+            data = cast(GithubDeviceTokenResponse, response.json())
+        except ValueError as exc:  # noqa: BLE001
+            raise GithubServiceError("Invalid response from GitHub token endpoint") from exc
+
+        return data
+
+    async def get_authenticated_user(self, *, access_token: str) -> dict[str, Any]:
+        """Retrieve the GitHub user associated with an access token."""
+
+        response = await self._get(
+            access_token=access_token,
+            repo_full_name="",
+            endpoint="/user",
+        )
+
+        if response.status_code != 200:
+            raise GithubServiceError(
+                f"Failed to fetch GitHub user ({response.status_code}): {response.text}"
+            )
+
+        try:
+            return cast(dict[str, Any], response.json())
+        except ValueError as exc:  # noqa: BLE001
+            raise GithubServiceError("Invalid JSON response from GitHub user API") from exc
 
     async def create_pull_request(
         self,
@@ -177,10 +290,25 @@ class GithubService:
             json=payload,
         )
 
-        if response.status_code not in {200, 201, 422}:
+        if response.status_code in {200, 201, 422}:
+            return
+
+        if response.status_code == 404:
             raise GithubServiceError(
-                f"Failed to create branch ({response.status_code}): {response.text}"
+                "GitHub could not find the repository or default branch while creating"
+                f" '{branch_name}'. Check that '{repo_full_name}' exists and that the"
+                " connected GitHub account has push access."
             )
+
+        if response.status_code == 403:
+            raise GithubServiceError(
+                "GitHub rejected the branch creation due to missing permissions."
+                " Ensure the connected GitHub account has write access to the repo."
+            )
+
+        raise GithubServiceError(
+            f"Failed to create branch ({response.status_code}): {response.text}"
+        )
 
     async def ensure_branch_exists(
         self,
@@ -217,12 +345,19 @@ class GithubService:
         if not default_sha:
             raise GithubServiceError("Unable to determine default branch SHA")
 
-        await self.create_branch_from_base(
-            access_token=access_token,
-            repo_full_name=repo_full_name,
-            branch_name=branch_name,
-            base_sha=default_sha,
-        )
+        try:
+            await self.create_branch_from_base(
+                access_token=access_token,
+                repo_full_name=repo_full_name,
+                branch_name=branch_name,
+                base_sha=default_sha,
+            )
+        except GithubServiceError as exc:
+            raise GithubServiceError(
+                "Unable to create branch '{branch}' on '{repo}'. "
+                "Verify the repository name, default branch, and token permissions."
+                .format(branch=branch_name, repo=repo_full_name)
+            ) from exc
 
     def _headers(self, access_token: str) -> dict[str, str]:
         token_prefixes = ("ghp_", "gho_", "ghu_", "ghs_", "ghr_")

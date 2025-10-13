@@ -9,7 +9,6 @@ import discord
 
 from utils import user_has_permission
 
-from . import messages
 from .types import PendingTaskContext
 
 logger = logging.getLogger(__name__)
@@ -26,13 +25,26 @@ class ConfirmationView(discord.ui.View):
         self, interaction: discord.Interaction[discord.Client]
     ) -> bool:
         """Check confirm permissions and alert the user when insufficient."""
-        if not isinstance(interaction.user, discord.Member):
+
+        if isinstance(interaction.user, discord.Member):
+            member: discord.Member | None = interaction.user
+        else:
+            guild = self.context.bot.get_guild(self.context.discord_guild_id)
+            member = None
+            if guild is not None:
+                member = guild.get_member(interaction.user.id)
+                if member is None:
+                    try:
+                        member = await guild.fetch_member(interaction.user.id)
+                    except discord.DiscordException:
+                        member = None
+
+        if member is None:
             await interaction.response.send_message(
                 "Unable to resolve your guild permissions.", ephemeral=True
             )
             return False
 
-        member: discord.Member = interaction.user
         role_ids = [str(role.id) for role in member.roles]
         if user_has_permission(role_ids, self.context.guild_permissions, "confirm"):
             return True
@@ -51,12 +63,24 @@ class ConfirmationView(discord.ui.View):
             return
 
         await interaction.response.defer(ephemeral=True, thinking=True)
+
+        channel_message = await self.context.bot._get_task_channel_message(self.context)
+        if channel_message is None:
+            await interaction.followup.send(
+                "Original task message is no longer available. Please create a new task.",
+                ephemeral=True,
+            )
+            return
+
         try:
             if action == "confirm":
                 await self.context.bot.start_confirmed_task(
                     context=self.context,
-                    channel_message=interaction.message,
-                    view=self,
+                    channel_message=channel_message,
+                    view=None,
+                )
+                await self.context.bot._clear_task_dm_views(
+                    self.context.task_id, preserve=interaction.message
                 )
                 await interaction.followup.send(
                     "Task confirmed. CodeCat is starting now.", ephemeral=True
@@ -65,8 +89,11 @@ class ConfirmationView(discord.ui.View):
                 await self.context.bot.reject_task(
                     context=self.context,
                     moderator=interaction.user,
-                    channel_message=interaction.message,
-                    view=self,
+                    channel_message=channel_message,
+                    view=None,
+                )
+                await self.context.bot._clear_task_dm_views(
+                    self.context.task_id, preserve=interaction.message
                 )
                 await interaction.followup.send(
                     "Task rejected successfully.", ephemeral=True
@@ -90,14 +117,3 @@ class ConfirmationView(discord.ui.View):
     ) -> None:
         del button
         await self._handle_action(interaction, "reject")
-
-    async def render_pending_message(self) -> dict[str, object]:
-        """Produce message payload for the pending confirmation state."""
-        payload = messages.build_pending_message(
-            requester=self.context.requester,
-            repo=self.context.repo,
-            branch=self.context.branch_name,
-            description=self.context.description,
-        )
-        payload["view"] = self
-        return payload

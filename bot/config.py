@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     # GitHub
     github_app_id: str | None = Field(default=None, alias="GITHUB_APP_ID")
     github_app_secret: str | None = Field(default=None, alias="GITHUB_APP_SECRET")
+    github_client_id: str | None = Field(default=None, alias="GITHUB_CLIENT_ID")
+    github_client_secret: str | None = Field(default=None, alias="GITHUB_CLIENT_SECRET")
 
     # OpenRouter
     openrouter_api_base_url: str = Field(

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { PixelButton } from "@/components/pixel-button";
 import type { GuildDetailResult } from "@/lib/guilds/hooks";
 import { cn } from "@/lib/utils";
@@ -13,17 +12,81 @@ import {
   useGitHubConnectionStatus,
 } from "@/features/github";
 import { PixelInput } from "@/components/pixel-input";
-import { PixelSelect } from "@/components/pixel-select";
+import {
+  PixelSelect,
+  PixelSelectTrigger,
+  PixelSelectValue,
+  PixelSelectContent,
+  PixelSelectItem,
+} from "@/components/pixel-select";
 import Link from "next/link";
+import {
+  useOpenRouterModelsQuery,
+  type OpenRouterModel,
+} from "@/features/openrouter";
 
-const OPENROUTER_MODELS = [
-  { value: "anthropic/claude-3.5-sonnet", label: "Claude 3.5 Sonnet" },
-  { value: "anthropic/claude-3-opus", label: "Claude 3 Opus" },
-  { value: "anthropic/claude-3-haiku", label: "Claude 3 Haiku" },
-  { value: "openai/gpt-4-turbo", label: "GPT-4 Turbo" },
-  { value: "openai/gpt-4", label: "GPT-4" },
-  { value: "google/gemini-pro-1.5", label: "Gemini Pro 1.5" },
-] as const;
+const FALLBACK_OPENROUTER_MODELS: OpenRouterModel[] = [
+  {
+    id: "anthropic/claude-3.5-sonnet",
+    name: "Claude 3.5 Sonnet",
+    description: "Balanced flagship Claude model for general code tasks.",
+    contextLength: null,
+    pricing: {
+      prompt: null,
+      completion: null,
+    },
+  },
+  {
+    id: "anthropic/claude-3-opus",
+    name: "Claude 3 Opus",
+    description: "High-intelligence Claude model suited for complex work.",
+    contextLength: null,
+    pricing: {
+      prompt: null,
+      completion: null,
+    },
+  },
+  {
+    id: "anthropic/claude-3-haiku",
+    name: "Claude 3 Haiku",
+    description: "Fastest Claude model for rapid prototyping and iteration.",
+    contextLength: null,
+    pricing: {
+      prompt: null,
+      completion: null,
+    },
+  },
+  {
+    id: "openai/gpt-4-turbo",
+    name: "GPT-4 Turbo",
+    description: "OpenAI GPT-4 Turbo with higher context and lower latency.",
+    contextLength: null,
+    pricing: {
+      prompt: null,
+      completion: null,
+    },
+  },
+  {
+    id: "openai/gpt-4",
+    name: "GPT-4",
+    description: "Original GPT-4 model for high-quality completions.",
+    contextLength: null,
+    pricing: {
+      prompt: null,
+      completion: null,
+    },
+  },
+  {
+    id: "google/gemini-pro-1.5",
+    name: "Gemini Pro 1.5",
+    description: "Google Gemini Pro 1.5 for multimodal coding scenarios.",
+    contextLength: null,
+    pricing: {
+      prompt: null,
+      completion: null,
+    },
+  },
+];
 
 type GuildSettingsFormProps = {
   guild: GuildDetailResult["guild"];
@@ -95,6 +158,47 @@ export const GuildSettingsForm = ({
     guild.githubRepoId,
     guild.githubRepoName,
   ]);
+
+  const {
+    data: apiModels,
+    isLoading: isLoadingModels,
+    isError: isModelsError,
+    error: modelsError,
+  } = useOpenRouterModelsQuery();
+
+  const modelOptions = useMemo(() => {
+    const baseList =
+      apiModels && apiModels.length > 0
+        ? apiModels
+        : FALLBACK_OPENROUTER_MODELS;
+
+    if (
+      selectedModel &&
+      !baseList.some((model) => model.id === selectedModel)
+    ) {
+      return [
+        {
+          id: selectedModel,
+          name: selectedModel,
+          description: undefined,
+          contextLength: null,
+          pricing: { prompt: null, completion: null },
+        },
+        ...baseList,
+      ];
+    }
+
+    return baseList;
+  }, [apiModels, selectedModel]);
+
+  const selectedModelOption = modelOptions.find(
+    (model) => model.id === selectedModel
+  );
+
+  const modelsErrorMessage =
+    isModelsError && modelsError instanceof Error
+      ? modelsError.message
+      : null;
 
   const hasPermissionsChanged = useMemo(() => {
     const createChanged =
@@ -261,16 +365,39 @@ export const GuildSettingsForm = ({
         <PixelSelect
           value={selectedModel}
           onValueChange={setSelectedModel}
-          disabled={isSaving}
+          disabled={isSaving || (isLoadingModels && !apiModels?.length)}
         >
-          {OPENROUTER_MODELS.map((model) => (
-            <option key={model.value} value={model.value}>
-              {model.label}
-            </option>
-          ))}
+          <PixelSelectTrigger>
+            <PixelSelectValue placeholder="Select an OpenRouter model">
+              {selectedModelOption ? selectedModelOption.name : null}
+            </PixelSelectValue>
+          </PixelSelectTrigger>
+          <PixelSelectContent>
+            {isLoadingModels ? (
+              <PixelSelectItem value="__loading" disabled>
+                Loading models…
+              </PixelSelectItem>
+            ) : null}
+            {modelOptions.map((model) => (
+              <PixelSelectItem key={model.id} value={model.id}>
+                {model.name}
+              </PixelSelectItem>
+            ))}
+            {isModelsError ? (
+              <PixelSelectItem value="__error" disabled>
+                Unable to refresh models. Showing fallback options.
+              </PixelSelectItem>
+            ) : null}
+          </PixelSelectContent>
         </PixelSelect>
         <p className="text-xs text-muted-foreground">
-          Select the default AI model for code generation tasks.
+          {isLoadingModels
+            ? "Fetching the latest OpenRouter model list…"
+            : isModelsError
+            ? `Unable to contact OpenRouter${
+                modelsErrorMessage ? `: ${modelsErrorMessage}` : ""
+              }. Using fallback models.`
+            : "Select the default AI model for code generation tasks."}
         </p>
       </div>
 

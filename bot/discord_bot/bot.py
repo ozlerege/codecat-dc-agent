@@ -22,6 +22,7 @@ from services import (
 from utils import user_has_permission
 
 from . import messages
+from .interactions import ConfirmationView
 from .types import PendingTaskContext
 
 logger = logging.getLogger(__name__)
@@ -48,6 +49,8 @@ class CodeCatBot(discord.Client):
         self.settings = get_settings()
         self._task_contexts: dict[str, PendingTaskContext] = {}
         self._task_messages: dict[str, discord.Message] = {}
+        self._task_dm_messages: dict[str, list[discord.Message]] = {}
+        self._github_auth_tasks: dict[str, asyncio.Task[None]] = {}
 
     async def setup_hook(self) -> None:
         """Run after login to register slash commands."""
@@ -63,6 +66,9 @@ class CodeCatBot(discord.Client):
 
     async def close(self) -> None:
         """Cleanup resources on shutdown."""
+        for task in list(self._github_auth_tasks.values()):
+            task.cancel()
+        self._github_auth_tasks.clear()
         await super().close()
 
     async def handle_codecat_command(
@@ -227,6 +233,169 @@ class CodeCatBot(discord.Client):
             has_confirm=has_confirm,
         )
 
+    async def handle_connect_github_command(
+        self,
+        *,
+        interaction: discord.Interaction[discord.Client],
+    ) -> None:
+        """Process the /connect-github command for eligible members."""
+
+        if interaction.guild_id is None or interaction.guild is None:
+            await interaction.response.send_message(
+                "This command can only be used inside a Discord server.",
+                ephemeral=True,
+            )
+            return
+
+        guild_id = str(interaction.guild_id)
+        member = interaction.guild.get_member(interaction.user.id)
+        if member is None:
+            try:
+                member = await interaction.guild.fetch_member(interaction.user.id)
+            except discord.NotFound:
+                member = None
+            except discord.HTTPException as exc:
+                logger.exception("Failed to fetch member %s: %s", interaction.user.id, exc)
+                member = None
+
+        if member is None:
+            await interaction.response.send_message(
+                "Unable to resolve your Discord member profile. Please try again.",
+                ephemeral=True,
+            )
+            return
+
+        try:
+            guild_record = await self.supabase.get_guild_by_discord_id(guild_id)
+        except SupabaseServiceError as exc:
+            logger.exception("Failed to load guild %s: %s", guild_id, exc)
+            await interaction.response.send_message(
+                "Guild configuration is unavailable right now. Please try again later.",
+                ephemeral=True,
+            )
+            return
+
+        if not guild_record:
+            await interaction.response.send_message(
+                "This guild is not configured in the dashboard yet.",
+                ephemeral=True,
+            )
+            return
+
+        guild_permissions = guild_record.get("permissions") or {
+            "create_roles": [],
+            "confirm_roles": [],
+        }
+
+        role_ids = [str(role.id) for role in getattr(member, "roles", [])]
+        if not user_has_permission(role_ids, guild_permissions, "create"):
+            await interaction.response.send_message(
+                "You do not have permission to connect GitHub for CodeCat tasks.",
+                ephemeral=True,
+            )
+            return
+
+        try:
+            user_record = await self.supabase.get_user_by_discord_id(str(member.id))
+        except SupabaseServiceError as exc:
+            logger.exception("Failed to load user %s: %s", member.id, exc)
+            user_record = None
+
+        if not user_record:
+            await interaction.response.send_message(
+                "Please sign in to the CodeCat dashboard once so we can link your Discord account, then run /connect-github again.",
+                ephemeral=True,
+            )
+            return
+
+        if user_record.get("github_access_token"):
+            github_username = user_record.get("github_username") or "GitHub"
+            await interaction.response.send_message(
+                f"Your GitHub account ({github_username}) is already connected.",
+                ephemeral=True,
+            )
+            return
+
+        client_id = self.settings.github_app_id or self.settings.github_client_id
+        client_secret = (
+            self.settings.github_app_secret or self.settings.github_client_secret
+        )
+
+        if not client_id or not client_secret:
+            await interaction.response.send_message(
+                "GitHub integration is not configured. Please contact an admin.",
+                ephemeral=True,
+            )
+            logger.warning(
+                "GitHub OAuth credentials missing: app_id=%s client_id=%s",  # noqa: G004
+                bool(self.settings.github_app_id),
+                bool(self.settings.github_client_id),
+            )
+            return
+
+        try:
+            device_data = await self.github_service.start_device_authorization(
+                client_id=client_id,
+                scope="repo read:user",
+            )
+        except GithubServiceError as exc:
+            logger.exception(
+                "Failed to start GitHub device authorization for %s: %s",
+                member.id,
+                exc,
+            )
+            await interaction.response.send_message(
+                "Could not start GitHub authorization. Please try again later.",
+                ephemeral=True,
+            )
+            return
+
+        verification_link = (
+            device_data.get("verification_uri_complete")
+            or device_data.get("verification_uri")
+        )
+        user_code = device_data.get("user_code")
+        expires_in = int(device_data.get("expires_in", 900))
+
+        if not verification_link or not user_code:
+            logger.error("GitHub device data missing required fields: %s", device_data)
+            await interaction.response.send_message(
+                "GitHub authorization is unavailable right now. Please try again later.",
+                ephemeral=True,
+            )
+            return
+
+        minutes_remaining = max(1, round(expires_in / 60))
+        instructions = (
+            "Connect your GitHub account:\n"
+            f"1. Visit {verification_link}\n"
+            f"2. Enter code `{user_code}`\n"
+            f"This code expires in about {minutes_remaining} minute(s)."
+        )
+
+        await interaction.response.send_message(instructions, ephemeral=True)
+
+        task_key = str(member.id)
+        existing_task = self._github_auth_tasks.pop(task_key, None)
+        if existing_task:
+            existing_task.cancel()
+
+        task = asyncio.create_task(
+            self._poll_github_device_authorization(
+                interaction=interaction,
+                member=member,
+                device_data=device_data,
+                client_id=client_id,
+                client_secret=client_secret,
+            )
+        )
+        self._github_auth_tasks[task_key] = task
+        task.add_done_callback(
+            lambda completed_task, *, key=task_key: self._github_auth_tasks.pop(key, None)
+            if self._github_auth_tasks.get(key) is completed_task
+            else None
+        )
+
     async def handle_current_repo_command(
         self,
         *,
@@ -292,6 +461,92 @@ class CodeCatBot(discord.Client):
 
         await interaction.followup.send(details, ephemeral=True)
 
+    async def handle_update_command(
+        self,
+        *,
+        interaction: discord.Interaction[discord.Client],
+    ) -> None:
+        """Refresh confirm-role prompts after guild permission changes."""
+
+        if interaction.guild is None or interaction.guild_id is None:
+            await interaction.response.send_message(
+                "This command can only be used inside a Discord server.",
+                ephemeral=True,
+            )
+            return
+
+        guild = interaction.guild
+        if interaction.user.id != guild.owner_id:
+            await interaction.response.send_message(
+                "Only the server owner can run this command.",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        guild_id = str(interaction.guild_id)
+
+        try:
+            guild_record = await self.supabase.get_guild_by_discord_id(guild_id)
+        except SupabaseServiceError as exc:
+            logger.exception("Failed to refresh roles for guild %s: %s", guild_id, exc)
+            await interaction.followup.send(
+                "Unable to load guild configuration right now. Please try again later.",
+                ephemeral=True,
+            )
+            return
+
+        if not guild_record:
+            await interaction.followup.send(
+                "This guild is not configured in the dashboard yet.",
+                ephemeral=True,
+            )
+            return
+
+        latest_permissions = guild_record.get("permissions") or {
+            "create_roles": [],
+            "confirm_roles": [],
+        }
+
+        refreshed = 0
+        total_notified = 0
+        failed_members: set[int] = set()
+        for context in list(self._task_contexts.values()):
+            if (
+                context.discord_guild_id != interaction.guild_id
+                or context.status != "pending_confirmation"
+            ):
+                continue
+
+            context.guild_permissions = latest_permissions
+            await self._clear_task_dm_views(context.task_id)
+            sent, failed = await self._notify_confirm_members(context=context)
+            total_notified += sent
+            failed_members.update(failed)
+            refreshed += 1
+
+        if refreshed == 0:
+            message = "No pending tasks needed updates. New role settings will apply to future requests."
+        else:
+            if total_notified == 0 and failed_members:
+                failed_mentions = ", ".join(f"<@{member_id}>" for member_id in failed_members)
+                message = (
+                    f"Refreshed {refreshed} pending task(s), but no moderators could be notified. "
+                    f"Failed recipients: {failed_mentions}."
+                )
+            elif failed_members:
+                failed_mentions = ", ".join(f"<@{member_id}>" for member_id in failed_members)
+                message = (
+                    f"Refreshed {refreshed} pending task(s) and notified {total_notified} moderator(s). "
+                    f"Some members could not be reached: {failed_mentions}."
+                )
+            else:
+                message = (
+                    f"Refreshed {refreshed} pending task(s) and notified {total_notified} moderator(s)."
+                )
+
+        await interaction.followup.send(message, ephemeral=True)
+
     async def _post_initial_message(
         self,
         *,
@@ -346,18 +601,44 @@ class CodeCatBot(discord.Client):
                 self._task_messages.pop(context.task_id, None)
                 return
         else:
-            from .interactions import ConfirmationView
-
-            view = ConfirmationView(context)
-            payload = await view.render_pending_message()
+            payload = messages.build_pending_message(
+                requester=context.requester,
+                repo=context.repo,
+                branch=context.branch_name,
+                description=context.description,
+            )
             channel_message = await channel.send(
-                content=payload["content"], embed=payload["embed"], view=view
+                content=payload["content"],
+                embed=payload["embed"],
             )
             context.message_id = channel_message.id
             self._register_task_message(context.task_id, channel_message, context)
-            await interaction.followup.send(
-                "Task created and awaiting confirmation.", ephemeral=True
-            )
+            sent, failed = await self._notify_confirm_members(context=context)
+
+            if sent == 0 and failed:
+                failed_mentions = ", ".join(f"<@{member_id}>" for member_id in failed)
+                followup_message = (
+                    "Task created, but no moderators could be notified. "
+                    "Ask the team to check confirm roles or DM permissions."
+                    f" Failed recipients: {failed_mentions}"
+                )
+            elif sent == 0:
+                followup_message = (
+                    "Task created, but there are no members with confirm roles yet. "
+                    "Update role assignments or ask an admin to run /update once configured."
+                )
+            elif failed:
+                failed_mentions = ", ".join(f"<@{member_id}>" for member_id in failed)
+                followup_message = (
+                    f"Task created and notified {sent} moderator(s). "
+                    f"Some members could not be reached: {failed_mentions}."
+                )
+            else:
+                followup_message = (
+                    f"Task created and notified {sent} moderator(s). Waiting for confirmation."
+                )
+
+            await interaction.followup.send(followup_message, ephemeral=True)
 
     def _register_task_message(
         self,
@@ -369,6 +650,345 @@ class CodeCatBot(discord.Client):
         context.message_id = message.id
         self._task_messages[task_id] = message
         self._task_contexts[task_id] = context
+
+    def _register_task_dm_message(
+        self,
+        task_id: str,
+        message: discord.Message,
+    ) -> None:
+        """Track DM messages that contain confirmation controls."""
+
+        self._task_dm_messages.setdefault(task_id, []).append(message)
+
+    async def _clear_task_dm_views(
+        self,
+        task_id: str,
+        *,
+        preserve: discord.Message | None = None,
+    ) -> None:
+        """Remove interactive components from DM prompts after resolution."""
+
+        dm_messages = self._task_dm_messages.pop(task_id, [])
+        for dm_message in dm_messages:
+            try:
+                if preserve is not None and dm_message.id == preserve.id:
+                    await preserve.edit(view=None)
+                else:
+                    await dm_message.edit(view=None)
+            except discord.HTTPException as exc:
+                logger.warning(
+                    "Failed to clear DM view for task %s message %s: %s",
+                    task_id,
+                    dm_message.id,
+                    exc,
+                )
+
+    async def _get_task_channel_message(
+        self,
+        context: PendingTaskContext,
+    ) -> discord.Message | None:
+        """Retrieve the channel message associated with a pending task."""
+
+        message = self._task_messages.get(context.task_id)
+        if message:
+            return message
+
+        channel = self.get_channel(context.channel_id)
+        if channel is None:
+            try:
+                channel = await self.fetch_channel(context.channel_id)
+            except discord.DiscordException as exc:
+                logger.warning(
+                    "Failed to fetch channel %s for task %s: %s",
+                    context.channel_id,
+                    context.task_id,
+                    exc,
+                )
+                return None
+
+        if isinstance(channel, (discord.TextChannel, discord.Thread, discord.VoiceChannel)):
+            try:
+                message = await channel.fetch_message(require(context.message_id, "task message id"))
+            except discord.NotFound:
+                logger.warning(
+                    "Original task message %s not found in channel %s",
+                    context.message_id,
+                    context.channel_id,
+                )
+                return None
+            except discord.HTTPException as exc:
+                logger.warning(
+                    "Failed to retrieve task message %s: %s",
+                    context.message_id,
+                    exc,
+                )
+                return None
+
+            self._register_task_message(context.task_id, message, context)
+            return message
+
+        logger.warning(
+            "Unsupported channel type %s for task %s",
+            type(channel),
+            context.task_id,
+        )
+        return None
+
+    async def _notify_confirm_members(
+        self,
+        *,
+        context: PendingTaskContext,
+    ) -> tuple[int, list[int]]:
+        """Send confirmation prompts via DM to members with confirm roles.
+
+        Returns:
+            A tuple containing the number of successful DM notifications and a list
+            of member IDs that could not be notified (e.g. DMs disabled).
+        """
+
+        guild = self.get_guild(context.discord_guild_id)
+        if guild is None:
+            logger.warning(
+                "Guild %s not found in cache when notifying confirm members for task %s",
+                context.discord_guild_id,
+                context.task_id,
+            )
+            return (0, [])
+
+        confirm_role_ids: set[int] = set()
+        for raw_role in context.guild_permissions.get("confirm_roles") or []:
+            try:
+                confirm_role_ids.add(int(raw_role))
+            except (TypeError, ValueError):
+                logger.debug(
+                    "Skipping non-numeric confirm role %r for guild %s",
+                    raw_role,
+                    context.discord_guild_id,
+                )
+
+        if not confirm_role_ids:
+            logger.info(
+                "No confirm roles configured for guild %s; skipping DM prompts for task %s",
+                context.discord_guild_id,
+                context.task_id,
+            )
+            return (0, [])
+
+        channel_message = await self._get_task_channel_message(context)
+        if channel_message is None:
+            logger.warning(
+                "Cannot notify confirm members for task %s without channel message",
+                context.task_id,
+            )
+            return (0, [])
+
+        members: set[discord.Member] = set()
+        for role_id in confirm_role_ids:
+            role = guild.get_role(role_id)
+            if not role:
+                logger.debug(
+                    "Confirm role %s not found in guild %s",
+                    role_id,
+                    guild.id,
+                )
+                continue
+            members.update(role.members)
+
+        if not members:
+            logger.info(
+                "No members currently hold confirm roles in guild %s for task %s",
+                guild.id,
+                context.task_id,
+            )
+            return (0, [])
+
+        sent = 0
+        failed: list[int] = []
+        for member in members:
+            if member.bot:
+                continue
+
+            view = ConfirmationView(context)
+            prompt = messages.build_confirmation_prompt(
+                requester=context.requester,
+                repo=context.repo,
+                branch=context.branch_name,
+                description=context.description,
+                jump_url=channel_message.jump_url,
+            )
+
+            try:
+                dm_message = await member.send(
+                    content=prompt["content"],
+                    embed=prompt["embed"],
+                    view=view,
+                )
+            except discord.Forbidden:
+                logger.warning(
+                    "Unable to send confirmation DM to %s for task %s (DMs closed)",
+                    member.id,
+                    context.task_id,
+                )
+                failed.append(member.id)
+                continue
+            except discord.HTTPException as exc:
+                logger.warning(
+                    "Failed to send confirmation DM to %s for task %s: %s",
+                    member.id,
+                    context.task_id,
+                    exc,
+                )
+                failed.append(member.id)
+                continue
+
+            self._register_task_dm_message(context.task_id, dm_message)
+            sent += 1
+
+        if sent == 0:
+            logger.info(
+                "No confirmation DMs delivered for task %s (failures: %s)",
+                context.task_id,
+                failed,
+            )
+
+        return sent, failed
+
+    async def _poll_github_device_authorization(
+        self,
+        *,
+        interaction: discord.Interaction[discord.Client],
+        member: discord.Member,
+        device_data: dict[str, object],
+        client_id: str,
+        client_secret: str,
+    ) -> None:
+        """Poll GitHub's device endpoint until the user completes authorization."""
+
+        loop = asyncio.get_running_loop()
+        device_code = str(require(device_data.get("device_code"), "github device code"))
+        expires_in = int(device_data.get("expires_in", 900))
+        interval = int(device_data.get("interval", 5)) or 5
+        deadline = loop.time() + max(expires_in, 60)
+
+        try:
+            while True:
+                await asyncio.sleep(max(interval, 1))
+
+                if loop.time() >= deadline:
+                    await interaction.followup.send(
+                        "GitHub authorization timed out. Run /connect-github to try again.",
+                        ephemeral=True,
+                    )
+                    return
+
+                try:
+                    token_response = await self.github_service.poll_device_token(
+                        client_id=client_id,
+                        client_secret=client_secret,
+                        device_code=device_code,
+                    )
+                except GithubServiceError as exc:
+                    logger.exception(
+                        "Failed to poll GitHub device token for user %s: %s",
+                        member.id,
+                        exc,
+                    )
+                    await interaction.followup.send(
+                        "GitHub authorization failed. Please try again later.",
+                        ephemeral=True,
+                    )
+                    return
+
+                error = token_response.get("error") if isinstance(token_response, dict) else None
+
+                if error == "authorization_pending":
+                    continue
+                if error == "slow_down":
+                    interval += 5
+                    continue
+                if error == "access_denied":
+                    await interaction.followup.send(
+                        "GitHub authorization was denied. Run /connect-github when you're ready to try again.",
+                        ephemeral=True,
+                    )
+                    return
+                if error == "expired_token":
+                    await interaction.followup.send(
+                        "GitHub authorization expired before completion. Please run /connect-github again.",
+                        ephemeral=True,
+                    )
+                    return
+                if error:
+                    logger.error(
+                        "Unexpected GitHub device error '%s' for user %s", error, member.id
+                    )
+                    await interaction.followup.send(
+                        "GitHub authorization failed. Please try again later.",
+                        ephemeral=True,
+                    )
+                    return
+
+                access_token = token_response.get("access_token") if isinstance(token_response, dict) else None
+                if access_token:
+                    break
+
+            access_token = str(require(access_token, "github access token"))
+
+            try:
+                github_user = await self.github_service.get_authenticated_user(
+                    access_token=access_token,
+                )
+            except GithubServiceError as exc:
+                logger.exception(
+                    "Failed to fetch GitHub profile for user %s: %s", member.id, exc
+                )
+                await interaction.followup.send(
+                    "Connected to GitHub but could not verify your account. Please run /connect-github again.",
+                    ephemeral=True,
+                )
+                return
+
+            github_login = github_user.get("login") if isinstance(github_user, dict) else None
+            if not github_login:
+                logger.error(
+                    "GitHub user response missing login for Discord user %s: %s",
+                    member.id,
+                    github_user,
+                )
+                await interaction.followup.send(
+                    "GitHub authorization did not return a username. Please try again later.",
+                    ephemeral=True,
+                )
+                return
+
+            try:
+                await self.supabase.upsert_user_github_connection(
+                    discord_id=str(member.id),
+                    discord_username=member.name,
+                    github_access_token=access_token,
+                    github_username=str(github_login),
+                )
+            except SupabaseServiceError as exc:
+                logger.exception(
+                    "Failed to persist GitHub connection for user %s: %s",
+                    member.id,
+                    exc,
+                )
+                await interaction.followup.send(
+                    "Connected to GitHub but failed to save your account. Please try again later.",
+                    ephemeral=True,
+                )
+                return
+
+            await interaction.followup.send(
+                f"GitHub account `{github_login}` connected successfully. You can now run /codecat tasks.",
+                ephemeral=True,
+            )
+
+        except asyncio.CancelledError:  # noqa: PERF203
+            logger.info("Cancelled GitHub device flow for user %s", member.id)
+            raise
+
 
     async def start_confirmed_task(
         self,

@@ -85,3 +85,34 @@ def build_error_message(message: str) -> dict[str, object]:
         color=discord.Color.red(),
     )
     return {"content": message, "embed": embed}
+
+
+def build_confirmation_prompt(
+    *,
+    requester: discord.abc.User,
+    repo: str,
+    branch: str,
+    description: str,
+    jump_url: str,
+) -> dict[str, object]:
+    """Create DM prompt for moderators with a link back to the original task."""
+
+    embed = discord.Embed(
+        title="CodeCat task awaiting confirmation",
+        description=f'"{description}"',
+        color=discord.Color.blurple(),
+    )
+    embed.add_field(name="Requested by", value=requester.mention, inline=True)
+    embed.add_field(name="Repository", value=repo, inline=True)
+    embed.add_field(name="Branch", value=branch, inline=True)
+    embed.add_field(
+        name="Task link",
+        value=f"[View in Discord]({jump_url})",
+        inline=False,
+    )
+
+    content = (
+        "You have a CodeCat task waiting for review. "
+        "Use the buttons below to confirm or reject the request."
+    )
+    return {"content": content, "embed": embed}

@@ -38,8 +38,6 @@ def register_commands(bot: CodeCatBot) -> None:
             repo_override=repo,
         )
 
-    logger.info("Registered slash commands.")
-
     @bot.tree.command(
         name="current_repo",
         description="Show the repository configuration for this guild.",
@@ -48,3 +46,23 @@ def register_commands(bot: CodeCatBot) -> None:
         interaction: discord.Interaction[discord.Client],
     ) -> None:
         await bot.handle_current_repo_command(interaction=interaction)
+
+    @bot.tree.command(
+        name="connect-github",
+        description="Connect your GitHub account for CodeCat tasks.",
+    )
+    async def connect_github_command(
+        interaction: discord.Interaction[discord.Client],
+    ) -> None:
+        await bot.handle_connect_github_command(interaction=interaction)
+
+    @bot.tree.command(
+        name="update",
+        description="Refresh CodeCat role configuration for this guild.",
+    )
+    async def update_command(
+        interaction: discord.Interaction[discord.Client],
+    ) -> None:
+        await bot.handle_update_command(interaction=interaction)
+
+    logger.info("Registered slash commands.")

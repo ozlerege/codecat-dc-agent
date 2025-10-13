@@ -13,7 +13,17 @@ import {
   useGitHubConnectionStatus,
 } from "@/features/github";
 import { PixelInput } from "@/components/pixel-input";
+import { PixelSelect } from "@/components/pixel-select";
 import Link from "next/link";
+
+const OPENROUTER_MODELS = [
+  { value: "anthropic/claude-3.5-sonnet", label: "Claude 3.5 Sonnet" },
+  { value: "anthropic/claude-3-opus", label: "Claude 3 Opus" },
+  { value: "anthropic/claude-3-haiku", label: "Claude 3 Haiku" },
+  { value: "openai/gpt-4-turbo", label: "GPT-4 Turbo" },
+  { value: "openai/gpt-4", label: "GPT-4" },
+  { value: "google/gemini-pro-1.5", label: "Gemini Pro 1.5" },
+] as const;
 
 type GuildSettingsFormProps = {
   guild: GuildDetailResult["guild"];
@@ -21,7 +31,8 @@ type GuildSettingsFormProps = {
   onSubmit: (payload: {
     defaultRepo?: string | null;
     defaultBranch?: string | null;
-    defaultJulesApiKey?: string | null;
+    defaultOpenRouterApiKey?: string | null;
+    defaultModel?: string | null;
     permissions?: GuildDetailResult["guild"]["permissions"];
     githubRepoId?: number | null;
     githubRepoName?: string | null;
@@ -51,6 +62,9 @@ export const GuildSettingsForm = ({
   ]);
   const [newDefaultKey, setNewDefaultKey] = useState("");
   const [clearDefaultKey, setClearDefaultKey] = useState(false);
+  const [selectedModel, setSelectedModel] = useState(
+    guild.defaultModel ?? "anthropic/claude-3.5-sonnet"
+  );
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedGitHubRepo, setSelectedGitHubRepo] = useState<{
@@ -68,6 +82,7 @@ export const GuildSettingsForm = ({
     setConfirmRoles([...guild.permissions.confirm_roles]);
     setNewDefaultKey("");
     setClearDefaultKey(false);
+    setSelectedModel(guild.defaultModel ?? "anthropic/claude-3.5-sonnet");
     setSelectedGitHubRepo(
       guild.githubRepoId && guild.githubRepoName
         ? { id: guild.githubRepoId, name: guild.githubRepoName }
@@ -76,6 +91,7 @@ export const GuildSettingsForm = ({
   }, [
     guild.defaultRepo,
     guild.permissions,
+    guild.defaultModel,
     guild.githubRepoId,
     guild.githubRepoName,
   ]);
@@ -121,9 +137,16 @@ export const GuildSettingsForm = ({
     }
 
     if (clearDefaultKey) {
-      payload.defaultJulesApiKey = null;
+      payload.defaultOpenRouterApiKey = null;
     } else if (newDefaultKey.trim().length > 0) {
-      payload.defaultJulesApiKey = newDefaultKey.trim();
+      payload.defaultOpenRouterApiKey = newDefaultKey.trim();
+    }
+
+    // Handle model changes
+    if (
+      selectedModel !== (guild.defaultModel ?? "anthropic/claude-3.5-sonnet")
+    ) {
+      payload.defaultModel = selectedModel;
     }
 
     // Handle GitHub repository changes
@@ -180,14 +203,14 @@ export const GuildSettingsForm = ({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="defaultKey">Guild Jules API Key</Label>
+          <Label htmlFor="defaultKey">Guild OpenRouter API Key</Label>
           <PixelInput
             id="defaultKey"
             type="password"
             placeholder={
-              guild.defaultJulesApiKeySet
+              guild.defaultOpenRouterApiKeySet
                 ? "Enter new key to rotate"
-                : "Provide a Jules API key"
+                : "Provide an OpenRouter API key"
             }
             value={newDefaultKey}
             onChange={(event) => {
@@ -200,19 +223,19 @@ export const GuildSettingsForm = ({
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <span>
               <span>
-                {guild.defaultJulesApiKeySet
+                {guild.defaultOpenRouterApiKeySet
                   ? "A guild-level key is currently configured."
-                  : "No guild-level key configured. You may get a Jules API key "}
+                  : "No guild-level key configured. Get an OpenRouter API key "}
               </span>
               <Link
-                href="https://developers.google.com/jules/api"
+                href="https://openrouter.ai/keys"
                 target="_blank"
                 className="text-purple-500 underline"
               >
                 HERE
               </Link>
             </span>
-            {guild.defaultJulesApiKeySet ? (
+            {guild.defaultOpenRouterApiKeySet ? (
               <button
                 type="button"
                 className={cn(
@@ -231,6 +254,24 @@ export const GuildSettingsForm = ({
             ) : null}
           </div>
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="defaultModel">Default AI Model</Label>
+        <PixelSelect
+          value={selectedModel}
+          onValueChange={setSelectedModel}
+          disabled={isSaving}
+        >
+          {OPENROUTER_MODELS.map((model) => (
+            <option key={model.value} value={model.value}>
+              {model.label}
+            </option>
+          ))}
+        </PixelSelect>
+        <p className="text-xs text-muted-foreground">
+          Select the default AI model for code generation tasks.
+        </p>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2">

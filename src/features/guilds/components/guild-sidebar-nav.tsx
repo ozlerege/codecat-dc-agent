@@ -37,6 +37,7 @@ import { useGuildDetailQuery } from "@/lib/guilds/hooks";
 import { useGuildRouteContext } from "../context";
 import { cn } from "@/lib/utils";
 import { InviteBotButton } from "./invite-bot-button";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 type NavItem = {
   readonly id: string;
@@ -121,14 +122,9 @@ const GuildSidebar = () => {
           {collapsed ? (
             <span className="sr-only">{displayName} guild</span>
           ) : (
-            <div className="flex flex-col min-w-0 overflow-hidden">
-              <span className="truncate text-sm font-bold uppercase tracking-wide leading-tight">
-                {displayName}
-              </span>
-              <span className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Guild
-              </span>
-            </div>
+            <span className="truncate text-sm font-bold uppercase tracking-wide leading-tight">
+              {displayName}
+            </span>
           )}
         </div>
       </SidebarHeader>
@@ -226,10 +222,6 @@ const GuildContent = ({ children }: { children: React.ReactNode }) => {
       <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b-4 border-border px-6">
         <div className="flex items-center gap-4">
           <SidebarTrigger className="-ml-1" />
-
-          <p className="text-xl font-bold uppercase tracking-wide leading-none truncate">
-            {currentName}
-          </p>
         </div>
         <SignOutButton />
       </header>

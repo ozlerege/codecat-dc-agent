@@ -81,9 +81,9 @@ export const GuildOverview = ({ guild }: GuildOverviewProps) => {
 
           <PixelCard>
             <PixelCardHeader>
-              <PixelCardTitle>Jules API Key</PixelCardTitle>
+              <PixelCardTitle>OpenRouter API Key</PixelCardTitle>
               <PixelCardDescription>
-                Jules API key for this guild
+                OpenRouter API key for this guild
               </PixelCardDescription>
             </PixelCardHeader>
 
@@ -91,7 +91,7 @@ export const GuildOverview = ({ guild }: GuildOverviewProps) => {
               <PixelButton
                 onClick={() => router.push(`/guilds/${guild.id}/settings`)}
               >
-                {guild.defaultJulesApiKeySet ? "Connected" : "Set Api Key"}
+                {guild.defaultOpenRouterApiKeySet ? "Connected" : "Set Api Key"}
               </PixelButton>
             </PixelCardFooter>
           </PixelCard>

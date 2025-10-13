@@ -13,9 +13,10 @@ const createSupabaseClient = async () =>
 
 export async function GET(
   _request: Request,
-  context: { params: { guildId: string } }
+  context: { params: Promise<{ guildId: string }> }
 ) {
-  const guildId = normalizeGuildId(context.params.guildId);
+  const params = await context.params;
+  const guildId = normalizeGuildId(params.guildId);
 
   if (!guildId) {
     return NextResponse.json({ error: "invalid_guild_id" }, { status: 400 });

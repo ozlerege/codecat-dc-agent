@@ -15,9 +15,10 @@ const createSupabaseClient = async () =>
 
 export async function GET(
   request: Request,
-  context: { params: { guildId: string } }
+  context: { params: Promise<{ guildId: string }> }
 ) {
-  const { guildId: rawGuildId } = context.params;
+  const params = await context.params;
+  const { guildId: rawGuildId } = params;
   const guildId = normalizeGuildId(rawGuildId);
 
   if (!guildId) {
@@ -56,9 +57,10 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  context: { params: { guildId: string } }
+  context: { params: Promise<{ guildId: string }> }
 ) {
-  const { guildId: rawGuildId } = context.params;
+  const params = await context.params;
+  const { guildId: rawGuildId } = params;
   const guildId = normalizeGuildId(rawGuildId);
 
   if (!guildId) {
@@ -99,7 +101,8 @@ export async function PATCH(
   const {
     defaultRepo: incomingRepo,
     defaultBranch: incomingBranch,
-    defaultJulesApiKey: incomingDefaultKey,
+    defaultOpenRouterApiKey: incomingDefaultKey,
+    defaultModel: incomingDefaultModel,
     permissions: incomingPermissions,
     githubRepoId: incomingGithubRepoId,
     githubRepoName: incomingGithubRepoName,
@@ -108,7 +111,8 @@ export async function PATCH(
   } = (payload ?? {}) as {
     defaultRepo?: unknown;
     defaultBranch?: unknown;
-    defaultJulesApiKey?: unknown;
+    defaultOpenRouterApiKey?: unknown;
+    defaultModel?: unknown;
     permissions?: unknown;
     githubRepoId?: unknown;
     githubRepoName?: unknown;
@@ -119,7 +123,8 @@ export async function PATCH(
   const updates: {
     defaultRepo?: string | null;
     defaultBranch?: string | null;
-    defaultJulesApiKey?: string | null;
+    defaultOpenRouterApiKey?: string | null;
+    defaultModel?: string | null;
     permissions?: GuildPermissions;
     githubRepoId?: number | null;
     githubRepoName?: string | null;
@@ -155,12 +160,25 @@ export async function PATCH(
 
   if (incomingDefaultKey !== undefined) {
     if (incomingDefaultKey === null) {
-      updates.defaultJulesApiKey = null;
+      updates.defaultOpenRouterApiKey = null;
     } else if (typeof incomingDefaultKey === "string") {
-      updates.defaultJulesApiKey = incomingDefaultKey.trim() || null;
+      updates.defaultOpenRouterApiKey = incomingDefaultKey.trim() || null;
     } else {
       return NextResponse.json(
         { error: "invalid_default_key" },
+        { status: 400 }
+      );
+    }
+  }
+
+  if (incomingDefaultModel !== undefined) {
+    if (incomingDefaultModel === null) {
+      updates.defaultModel = null;
+    } else if (typeof incomingDefaultModel === "string") {
+      updates.defaultModel = incomingDefaultModel.trim() || null;
+    } else {
+      return NextResponse.json(
+        { error: "invalid_default_model" },
         { status: 400 }
       );
     }
@@ -225,7 +243,8 @@ export async function PATCH(
   if (
     updates.defaultRepo === undefined &&
     updates.defaultBranch === undefined &&
-    updates.defaultJulesApiKey === undefined &&
+    updates.defaultOpenRouterApiKey === undefined &&
+    updates.defaultModel === undefined &&
     updates.permissions === undefined &&
     updates.githubRepoId === undefined &&
     updates.githubRepoName === undefined &&
@@ -241,7 +260,8 @@ export async function PATCH(
     await repos.guilds.update(guildId, data.session.user.id, {
       defaultRepo: updates.defaultRepo,
       defaultBranch: updates.defaultBranch,
-      defaultJulesApiKey: updates.defaultJulesApiKey,
+      defaultOpenRouterApiKey: updates.defaultOpenRouterApiKey,
+      defaultModel: updates.defaultModel,
       permissions: updates.permissions,
       githubRepoId: updates.githubRepoId,
       githubRepoName: updates.githubRepoName,

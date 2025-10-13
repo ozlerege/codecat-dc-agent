@@ -63,7 +63,7 @@ type CreateGuildRecordInput = {
   permissions?: GuildPermissions;
   defaultBranch?: string | null;
   defaultRepo?: string | null;
-  defaultJulesApiKey?: string | null;
+  defaultOpenRouterApiKey?: string | null;
 };
 
 export const createGuildRecord = async (
@@ -77,7 +77,7 @@ export const createGuildRecord = async (
     permissions = DEFAULT_DB_GUILD_PERMISSIONS,
     defaultBranch = "main",
     defaultRepo = null,
-    defaultJulesApiKey = null,
+    defaultOpenRouterApiKey = null,
   } = input;
 
   const { error } = await client.from("guilds").insert(
@@ -88,7 +88,7 @@ export const createGuildRecord = async (
       default_branch: defaultBranch,
       permissions,
       default_repo: defaultRepo,
-      default_jules_api_key: defaultJulesApiKey,
+      default_openrouter_api_key: defaultOpenRouterApiKey,
     },
     {
       onConflict: "guild_id",
@@ -117,7 +117,8 @@ export type GuildRecord = {
   default_repo: string | null;
   default_branch: string | null;
   permissions: GuildPermissions | null;
-  default_jules_api_key: string | null;
+  default_openrouter_api_key: string | null;
+  default_model: string | null;
   created_at: string | null;
 };
 
@@ -129,7 +130,7 @@ export const getGuildForUser = async (
   const { data, error } = await client
     .from("guilds")
     .select(
-      "id, guild_id, installer_user_id, name, default_repo, default_branch, permissions, default_jules_api_key, created_at"
+      "id, guild_id, installer_user_id, name, default_repo, default_branch, permissions, default_openrouter_api_key, default_model, created_at"
     )
     .eq("guild_id", guildId)
     .eq("installer_user_id", userId)
@@ -147,7 +148,8 @@ type UpdateGuildRecordInput = {
   installerUserId: string;
   defaultRepo?: string | null;
   defaultBranch?: string | null;
-  defaultJulesApiKey?: string | null;
+  defaultOpenRouterApiKey?: string | null;
+  defaultModel?: string | null;
   permissions?: GuildPermissions;
   name?: string | null;
 };
@@ -161,7 +163,8 @@ export const updateGuildRecord = async (
     installerUserId,
     defaultRepo,
     defaultBranch,
-    defaultJulesApiKey,
+    defaultOpenRouterApiKey,
+    defaultModel,
     permissions,
     name,
   } = input;
@@ -176,8 +179,12 @@ export const updateGuildRecord = async (
     updates.default_branch = defaultBranch;
   }
 
-  if (defaultJulesApiKey !== undefined) {
-    updates.default_jules_api_key = defaultJulesApiKey;
+  if (defaultOpenRouterApiKey !== undefined) {
+    updates.default_openrouter_api_key = defaultOpenRouterApiKey;
+  }
+
+  if (defaultModel !== undefined) {
+    updates.default_model = defaultModel;
   }
 
   if (permissions !== undefined) {
@@ -194,7 +201,7 @@ export const updateGuildRecord = async (
     .eq("guild_id", guildId)
     .eq("installer_user_id", installerUserId)
     .select(
-      "id, guild_id, installer_user_id, name, default_repo, default_branch, permissions, default_jules_api_key, created_at"
+      "id, guild_id, installer_user_id, name, default_repo, default_branch, permissions, default_openrouter_api_key, default_model, created_at"
     )
     .maybeSingle();
 

@@ -12,9 +12,10 @@ import { normalizeGuildId } from "@/lib/guilds/validation";
  */
 export async function POST(
   request: Request,
-  context: { params: { guildId: string } }
+  context: { params: Promise<{ guildId: string }> }
 ) {
-  const { guildId: rawGuildId } = context.params;
+  const params = await context.params;
+  const { guildId: rawGuildId } = params;
   const guildId = normalizeGuildId(rawGuildId);
 
   if (!guildId) {
@@ -70,7 +71,10 @@ export async function POST(
   }
 
   // Get user's GitHub access token from session provider_token or user metadata
-  const accessToken = getGitHubAccessToken(data.session.user, data.session.provider_token);
+  const accessToken = getGitHubAccessToken(
+    data.session.user,
+    data.session.provider_token
+  );
 
   if (!accessToken) {
     return NextResponse.json(
@@ -121,9 +125,10 @@ export async function POST(
  */
 export async function DELETE(
   request: Request,
-  context: { params: { guildId: string } }
+  context: { params: Promise<{ guildId: string }> }
 ) {
-  const { guildId: rawGuildId } = context.params;
+  const params = await context.params;
+  const { guildId: rawGuildId } = params;
   const guildId = normalizeGuildId(rawGuildId);
 
   if (!guildId) {

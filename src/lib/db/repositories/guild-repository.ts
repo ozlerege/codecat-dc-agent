@@ -22,7 +22,8 @@ export type GuildRecord = {
   default_repo: string | null;
   default_branch: string | null;
   permissions: GuildPermissions | null;
-  default_jules_api_key: string | null;
+  default_openrouter_api_key: string | null;
+  default_model: string | null;
   github_repo_id: number | null;
   github_repo_name: string | null;
   github_connected: boolean | null;
@@ -40,7 +41,8 @@ export type CreateGuildInput = {
   permissions?: GuildPermissions;
   defaultBranch?: string | null;
   defaultRepo?: string | null;
-  defaultJulesApiKey?: string | null;
+  defaultOpenRouterApiKey?: string | null;
+  defaultModel?: string | null;
 };
 
 /**
@@ -50,7 +52,8 @@ export type UpdateGuildInput = {
   name?: string | null;
   defaultRepo?: string | null;
   defaultBranch?: string | null;
-  defaultJulesApiKey?: string | null;
+  defaultOpenRouterApiKey?: string | null;
+  defaultModel?: string | null;
   permissions?: GuildPermissions;
   githubRepoId?: number | null;
   githubRepoName?: string | null;
@@ -145,7 +148,8 @@ export class GuildRepository extends BaseRepository {
       permissions = GUILD_CONFIG.defaultPermissions,
       defaultBranch = GUILD_CONFIG.defaultBranch,
       defaultRepo = null,
-      defaultJulesApiKey = null,
+      defaultOpenRouterApiKey = null,
+      defaultModel = "anthropic/claude-3.5-sonnet",
     } = input;
 
     try {
@@ -156,7 +160,8 @@ export class GuildRepository extends BaseRepository {
         default_branch: defaultBranch,
         permissions,
         default_repo: defaultRepo,
-        default_jules_api_key: defaultJulesApiKey,
+        default_openrouter_api_key: defaultOpenRouterApiKey,
+        default_model: defaultModel,
       });
 
       if (error) {
@@ -240,8 +245,11 @@ export class GuildRepository extends BaseRepository {
       if (updates.defaultBranch !== undefined) {
         dbUpdates.default_branch = updates.defaultBranch;
       }
-      if (updates.defaultJulesApiKey !== undefined) {
-        dbUpdates.default_jules_api_key = updates.defaultJulesApiKey;
+      if (updates.defaultOpenRouterApiKey !== undefined) {
+        dbUpdates.default_openrouter_api_key = updates.defaultOpenRouterApiKey;
+      }
+      if (updates.defaultModel !== undefined) {
+        dbUpdates.default_model = updates.defaultModel;
       }
       if (updates.permissions !== undefined) {
         dbUpdates.permissions = updates.permissions;

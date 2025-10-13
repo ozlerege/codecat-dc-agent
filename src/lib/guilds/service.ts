@@ -31,7 +31,8 @@ export type GuildDetail = {
       create_roles: string[];
       confirm_roles: string[];
     };
-    defaultJulesApiKeySet: boolean;
+    defaultOpenRouterApiKeySet: boolean;
+    defaultModel: string | null;
     githubRepoId: number | null;
     githubRepoName: string | null;
     githubConnected: boolean | null;
@@ -70,7 +71,8 @@ const mapGuildRecord = (
     defaultRepo: record.default_repo,
     defaultBranch: record.default_branch,
     permissions,
-    defaultJulesApiKeySet: Boolean(record.default_jules_api_key),
+    defaultOpenRouterApiKeySet: Boolean(record.default_openrouter_api_key),
+    defaultModel: record.default_model,
     githubRepoId: record.github_repo_id,
     githubRepoName: record.github_repo_name,
     githubConnected: record.github_connected,

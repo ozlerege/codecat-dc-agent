@@ -1,13 +1,13 @@
 /**
  * Guild Feature Types
- * 
+ *
  * Type definitions for guild-related data and operations.
- * 
+ *
  * @module features/guilds/types
  */
 
-import type { GuildRecord } from '@/lib/db/repositories';
-import type { DiscordRole } from '@/lib/discord/roles';
+import type { GuildRecord } from "@/lib/db/repositories";
+import type { DiscordRole } from "@/lib/discord/roles";
 
 /**
  * Guild permissions structure
@@ -37,7 +37,8 @@ export type GuildDetail = {
     defaultRepo: string | null;
     defaultBranch: string | null;
     permissions: GuildPermissionsShape;
-    defaultJulesApiKeySet: boolean;
+    defaultOpenRouterApiKeySet: boolean;
+    defaultModel: string | null;
     createdAt: string | null;
   };
   tasks: GuildTaskSummary[];
@@ -50,10 +51,10 @@ export type GuildTaskSummary = {
   id: string;
   prompt: string;
   status:
-    | 'pending_confirmation'
-    | 'in_progress'
-    | 'rejected'
-    | 'completed'
+    | "pending_confirmation"
+    | "in_progress"
+    | "rejected"
+    | "completed"
     | null;
   prUrl: string | null;
   createdAt: string | null;
@@ -87,7 +88,8 @@ export type CreateGuildInput = {
 export type UpdateGuildInput = {
   defaultRepo?: string | null;
   defaultBranch?: string | null;
-  defaultJulesApiKey?: string | null;
+  defaultOpenRouterApiKey?: string | null;
+  defaultModel?: string | null;
   permissions?: GuildPermissionsShape;
 };
 
@@ -103,9 +105,9 @@ export type GuildRolesResult = {
  * Guild detail error types
  */
 export enum GuildDetailErrorCode {
-  GUILD_NOT_FOUND = 'guild_not_found',
-  GUILD_LOOKUP_FAILED = 'guild_lookup_failed',
-  TASKS_FETCH_FAILED = 'tasks_fetch_failed',
+  GUILD_NOT_FOUND = "guild_not_found",
+  GUILD_LOOKUP_FAILED = "guild_lookup_failed",
+  TASKS_FETCH_FAILED = "tasks_fetch_failed",
 }
 
 /**
@@ -118,8 +120,8 @@ export class GuildDetailError extends Error {
     message?: string
   ) {
     super(message ?? code);
-    this.name = 'GuildDetailError';
-    
+    this.name = "GuildDetailError";
+
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, GuildDetailError);
     }

@@ -8,7 +8,7 @@ export type Database = {
           discord_username: string | null;
           email: string | null;
           role: "admin" | "developer";
-          jules_api_key: string | null;
+          openrouter_api_key: string | null;
           github_access_token: string | null;
           github_username: string | null;
           created_at: string;
@@ -19,7 +19,7 @@ export type Database = {
           discord_username?: string | null;
           email?: string | null;
           role?: "admin" | "developer";
-          jules_api_key?: string | null;
+          openrouter_api_key?: string | null;
           github_access_token?: string | null;
           github_username?: string | null;
           created_at?: string;
@@ -30,7 +30,7 @@ export type Database = {
           discord_username?: string | null;
           email?: string | null;
           role?: "admin" | "developer";
-          jules_api_key?: string | null;
+          openrouter_api_key?: string | null;
           github_access_token?: string | null;
           github_username?: string | null;
           created_at?: string;
@@ -45,7 +45,8 @@ export type Database = {
           default_repo: string | null;
           default_branch: string | null;
           permissions: GuildPermissions | null;
-          default_jules_api_key: string | null;
+          default_openrouter_api_key: string | null;
+          default_model: string | null;
           github_repo_id: number | null;
           github_repo_name: string | null;
           github_connected: boolean | null;
@@ -60,7 +61,8 @@ export type Database = {
           default_repo?: string | null;
           default_branch?: string | null;
           permissions?: GuildPermissions | null;
-          default_jules_api_key?: string | null;
+          default_openrouter_api_key?: string | null;
+          default_model?: string | null;
           github_repo_id?: number | null;
           github_repo_name?: string | null;
           github_connected?: boolean | null;
@@ -75,7 +77,8 @@ export type Database = {
           default_repo?: string | null;
           default_branch?: string | null;
           permissions?: GuildPermissions | null;
-          default_jules_api_key?: string | null;
+          default_openrouter_api_key?: string | null;
+          default_model?: string | null;
           github_repo_id?: number | null;
           github_repo_name?: string | null;
           github_connected?: boolean | null;

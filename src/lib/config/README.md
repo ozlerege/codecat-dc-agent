@@ -117,7 +117,7 @@ Get Discord app ID or throw error if not configured.
 ```typescript
 import { APP_CONFIG } from '@/lib/config';
 
-console.log(APP_CONFIG.name); // 'Jules Discord Developer Agent'
+console.log(APP_CONFIG.name); // 'CodeCat Discord Developer Agent'
 console.log(APP_CONFIG.description);
 console.log(APP_CONFIG.version);
 ```

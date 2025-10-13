@@ -19,7 +19,7 @@ import type {
  */
 export class GitHubClient {
   private readonly baseUrl = "https://api.github.com";
-  private readonly userAgent = "Jules-Discord-Bot/1.0";
+  private readonly userAgent = "CodeCat-Discord-Bot/1.0";
 
   /**
    * Fetch user's personal repositories

@@ -55,7 +55,7 @@ export const GuildOverview = ({ guild }: GuildOverviewProps) => {
             <PixelCardHeader>
               <PixelCardTitle>GitHub Repository</PixelCardTitle>
               <PixelCardDescription>
-                Connected repository for Jules tasks
+                Connected repository for CodeCat tasks
               </PixelCardDescription>
             </PixelCardHeader>
             <PixelCardContent>
@@ -102,7 +102,7 @@ export const GuildOverview = ({ guild }: GuildOverviewProps) => {
         <header>
           <h2 className="text-xl font-semibold">Discord Role Permissions</h2>
           <p className="text-sm text-muted-foreground">
-            Roles authorized to create or confirm Jules automation tasks.
+            Roles authorized to create or confirm CodeCat automation tasks.
           </p>
         </header>
         <PermissionsList

@@ -30,7 +30,7 @@ const GuildTasksPage = () => {
       <header className="space-y-1">
         <h2 className="text-xl font-semibold">Recent Tasks</h2>
         <p className="text-sm text-muted-foreground">
-          Latest Jules automation activity for this guild.
+          Latest CodeCat automation activity for this guild.
         </p>
       </header>
       <GuildTasks tasks={data.tasks} />

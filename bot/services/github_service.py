@@ -68,7 +68,7 @@ class GithubService:
 
         GitHub REST API does not offer a multi-file commit endpoint directly; therefore we
         create or update each file individually within the same branch using the provided
-        commit message. The committer defaults to the Jules bot identity but may be
+        commit message. The committer defaults to the CodeCat bot identity but may be
         overridden by GitHub based on the access token permissions.
         """
         import base64
@@ -87,8 +87,8 @@ class GithubService:
                 "branch": branch_name,
                 "sha": file.get("sha"),
                 "committer": {
-                    "name": "Jules Bot",
-                    "email": "bot@jules.dev",
+                    "name": "CodeCat Bot",
+                    "email": "bot@codecat.dev",
                 },
             }
 

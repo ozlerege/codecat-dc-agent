@@ -1,4 +1,4 @@
-"""Discord message templates for the Jules workflow."""
+"""Discord message templates for the CodeCat workflow."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ def build_pending_message(
 ) -> dict[str, object]:
     """Create embed + content for pending confirmation."""
     embed = discord.Embed(
-        title="🧠 New Jules Task Requested",
+        title="🧠 New CodeCat Task Requested",
         description=f'"{description}"',
         color=discord.Color.blurple(),
     )
@@ -23,7 +23,7 @@ def build_pending_message(
     embed.add_field(name="Branch", value=branch, inline=True)
     embed.set_footer(text="Waiting for admin confirmation…")
     content = (
-        f"🧠 {requester.mention} requested a new Jules task\n"
+        f"🧠 {requester.mention} requested a new CodeCat task\n"
         f'Prompt: "{description}"\nRepo: {repo}\nWaiting for admin confirmation…'
     )
     return {"content": content, "embed": embed}
@@ -36,17 +36,17 @@ def build_in_progress_message(
     branch: str,
     description: str,
 ) -> dict[str, object]:
-    """Message when the Jules task starts immediately."""
+    """Message when the CodeCat task starts immediately."""
     embed = discord.Embed(
         title="🛠 Development started…",
-        description="Jules is generating the pull request.",
+        description="CodeCat is generating the pull request.",
         color=discord.Color.orange(),
     )
     embed.add_field(name="Requested by", value=requester.mention, inline=True)
     embed.add_field(name="Repository", value=repo, inline=True)
     embed.add_field(name="Branch", value=branch, inline=True)
     embed.add_field(name="Prompt", value=description, inline=False)
-    content = "🛠 Development started… Jules is generating PR."
+    content = "🛠 Development started… CodeCat is generating PR."
     return {"content": content, "embed": embed}
 
 
@@ -55,7 +55,7 @@ def build_completed_message(
     pr_url: str,
     requester: discord.abc.User,
 ) -> dict[str, object]:
-    """Message when Jules completes the task."""
+    """Message when CodeCat completes the task."""
     embed = discord.Embed(
         title="✅ PR created",
         description=f"[Open pull request]({pr_url})",

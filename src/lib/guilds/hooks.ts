@@ -100,7 +100,7 @@ type UpdateGuildInput = {
   guildId: string;
   defaultRepo?: string | null;
   defaultBranch?: string | null;
-  defaultJulesApiKey?: string | null;
+  defaultOpenRouterApiKey?: string | null;
   permissions?: GuildPermissionsShape;
   githubRepoId?: number | null;
   githubRepoName?: string | null;

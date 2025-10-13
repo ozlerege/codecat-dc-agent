@@ -11,14 +11,14 @@ from services import GuildPermissions, TaskStatus
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .bot import JulesBot
+    from .bot import CodeCatBot
 
 
 @dataclass(slots=True)
 class PendingTaskContext:
     """State container used when awaiting moderator confirmation."""
 
-    bot: "JulesBot"
+    bot: "CodeCatBot"
     task_id: str
     guild_uuid: str
     discord_guild_id: int

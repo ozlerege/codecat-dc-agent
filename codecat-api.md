@@ -1,13 +1,13 @@
 # Quickstart: Your first API call
 
-We'll walk through creating your first session with the Jules API using curl.
+We'll walk through creating your first session with the CodeCat API using curl.
 
 ## Step 1: List your available sources
 
-First, you need to find the name of the source you want to work with (e.g., your GitHub repo). This command will return a list of all sources you have connected to Jules.
+First, you need to find the name of the source you want to work with (e.g., your GitHub repo). This command will return a list of all sources you have connected to CodeCat.
 
 ```bash
-curl 'https://jules.googleapis.com/v1alpha/sources' \
+curl 'https://codecat.googleapis.com/v1alpha/sources' \
   -H 'X-Goog-Api-Key: YOUR_API_KEY'
 ```
 
@@ -31,10 +31,10 @@ The response will look something like this:
 
 ## Step 2: Create a new session
 
-Now, create a new session. You'll need the source name from the previous step. This request tells Jules to create a boba app in the specified repository.
+Now, create a new session. You'll need the source name from the previous step. This request tells CodeCat to create a boba app in the specified repository.
 
 ```bash
-curl 'https://jules.googleapis.com/v1alpha/sessions' \
+curl 'https://codecat.googleapis.com/v1alpha/sessions' \
   -X POST \
   -H "Content-Type: application/json" \
   -H 'X-Goog-Api-Key: YOUR_API_KEY' \
@@ -74,7 +74,7 @@ By default, sessions created through the API will have their plans automatically
 You can list your sessions as follows.
 
 ```bash
-curl 'https://jules.googleapis.com/v1alpha/sessions?pageSize=5' \
+curl 'https://codecat.googleapis.com/v1alpha/sessions?pageSize=5' \
   -H 'X-Goog-Api-Key: YOUR_API_KEY'
 ```
 
@@ -83,7 +83,7 @@ curl 'https://jules.googleapis.com/v1alpha/sessions?pageSize=5' \
 If your session requires explicit plan approval, you can approve the latest plan as follows:
 
 ```bash
-curl 'https://jules.googleapis.com/v1alpha/sessions/SESSION_ID:approvePlan' \
+curl 'https://codecat.googleapis.com/v1alpha/sessions/SESSION_ID:approvePlan' \
   -X POST \
   -H "Content-Type: application/json" \
   -H 'X-Goog-Api-Key: YOUR_API_KEY'
@@ -94,14 +94,14 @@ curl 'https://jules.googleapis.com/v1alpha/sessions/SESSION_ID:approvePlan' \
 ### To list activities in a session:
 
 ```bash
-curl 'https://jules.googleapis.com/v1alpha/sessions/SESSION_ID/activities?pageSize=30' \
+curl 'https://codecat.googleapis.com/v1alpha/sessions/SESSION_ID/activities?pageSize=30' \
   -H 'X-Goog-Api-Key: YOUR_API_KEY'
 ```
 
 ### To send a message to the agent:
 
 ```bash
-curl 'https://jules.googleapis.com/v1alpha/sessions/SESSION_ID:sendMessage' \
+curl 'https://codecat.googleapis.com/v1alpha/sessions/SESSION_ID:sendMessage' \
   -X POST \
   -H "Content-Type: application/json" \
   -H 'X-Goog-Api-Key: YOUR_API_KEY' \

@@ -63,13 +63,13 @@ export const GuildsContent = ({ initialUserName }: GuildsContentProps) => {
           <>
             <GuildSection
               title="Saved Servers"
-              description="Servers already connected to Jules."
+              description="Servers already connected to CodeCat."
               guilds={savedGuilds}
               emptyMessage="No saved servers yet."
             />
             <GuildSection
               title="Unsaved Servers"
-              description="Select a server to connect it with Jules and start managing tasks."
+              description="Select a server to connect it with CodeCat and start managing tasks."
               guilds={unsavedGuilds}
               emptyMessage="All available servers are already configured."
               renderAction={(guild) => (

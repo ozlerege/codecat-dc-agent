@@ -1,4 +1,4 @@
-"""discord.py client implementation for the Jules automation bot."""
+"""discord.py client implementation for the CodeCat automation bot."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from .types import PendingTaskContext
 logger = logging.getLogger(__name__)
 
 
-class JulesBot(discord.Client):
+class CodeCatBot(discord.Client):
     """Custom Discord client that orchestrates command handling."""
 
     def __init__(
@@ -65,7 +65,7 @@ class JulesBot(discord.Client):
         """Cleanup resources on shutdown."""
         await super().close()
 
-    async def handle_jules_command(
+    async def handle_codecat_command(
         self,
         *,
         interaction: discord.Interaction[discord.Client],
@@ -73,7 +73,7 @@ class JulesBot(discord.Client):
         task_description: str,
         repo_override: Optional[str],
     ) -> None:
-        """Business logic for the /jules command."""
+        """Business logic for the /codecat command."""
         if interaction.guild_id is None or interaction.guild is None:
             await interaction.response.send_message(
                 "This command is only available in servers.", ephemeral=True
@@ -102,7 +102,7 @@ class JulesBot(discord.Client):
 
         if not guild_record:
             await interaction.followup.send(
-                "This guild is not configured for Jules tasks yet.", ephemeral=True
+                "This guild is not configured for CodeCat tasks yet.", ephemeral=True
             )
             return
 
@@ -137,7 +137,7 @@ class JulesBot(discord.Client):
 
         if not has_create and not has_confirm:
             await interaction.followup.send(
-                "You do not have permission to run Jules tasks.", ephemeral=True
+                "You do not have permission to run CodeCat tasks.", ephemeral=True
             )
             return
 
@@ -313,7 +313,7 @@ class JulesBot(discord.Client):
             )
             self._register_task_message(context.task_id, channel_message, context)
             await interaction.followup.send(
-                "Task confirmed automatically. Jules is starting now.", ephemeral=True
+                "Task confirmed automatically. CodeCat is starting now.", ephemeral=True
             )
             try:
                 await self.start_confirmed_task(
@@ -323,7 +323,7 @@ class JulesBot(discord.Client):
                 )
             except Exception:  # noqa: BLE001
                 error_payload = messages.build_error_message(
-                    "Failed to start Jules session. Please try again."
+                    "Failed to start CodeCat session. Please try again."
                 )
                 try:
                     await self.supabase.update_task_status(context.task_id, "rejected")
@@ -339,7 +339,7 @@ class JulesBot(discord.Client):
                     view=None,
                 )
                 await interaction.followup.send(
-                    "Jules session could not be started. Please retry later.",
+                    "CodeCat session could not be started. Please retry later.",
                     ephemeral=True,
                 )
                 self._task_contexts.pop(context.task_id, None)
@@ -472,7 +472,7 @@ class JulesBot(discord.Client):
                 commit_files.append({
                     "path": change.path,
                     "content": change.content,
-                    "message": f"Update {change.path} via Jules Discord Bot",
+                    "message": f"Update {change.path} via CodeCat Discord Bot",
                     "sha": file_sha,
                 })
             
@@ -482,7 +482,7 @@ class JulesBot(discord.Client):
                     repo_full_name=context.repo,
                     branch_name=context.branch_name,
                     files=commit_files,
-                    commit_message=f"Jules Discord Bot: {context.description}",
+                    commit_message=f"CodeCat Discord Bot: {context.description}",
                 )
             else:
                 logger.warning("No files to commit for task %s", context.task_id)
@@ -584,12 +584,12 @@ class JulesBot(discord.Client):
         self._task_messages.pop(context.task_id, None)
 
 
-async def create_bot() -> JulesBot:
+async def create_bot() -> CodeCatBot:
     """Factory to create bot instance with configured services."""
     supabase_service = await SupabaseService.create()
     openrouter_service = OpenRouterService.create()
     github_service = GithubService.create()
-    return JulesBot(
+    return CodeCatBot(
         supabase_service=supabase_service,
         openrouter_service=openrouter_service,
         github_service=github_service,

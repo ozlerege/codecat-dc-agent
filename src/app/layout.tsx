@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Jules Discord Developer Agent",
+  title: "CodeCat Discord Developer Agent",
   description: "AI-powered development tasks directly from Discord",
 };
 

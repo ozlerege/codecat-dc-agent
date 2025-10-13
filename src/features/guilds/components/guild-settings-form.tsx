@@ -277,7 +277,7 @@ export const GuildSettingsForm = ({
       <div className="grid gap-6 sm:grid-cols-2">
         <GuildRoleSelector
           label="Create Role IDs"
-          description="Users in these roles can create Jules tasks."
+          description="Users in these roles can create CodeCat tasks."
           roles={availableRoles}
           value={createRoles}
           onChange={(roleIds) => setCreateRoles(roleIds)}

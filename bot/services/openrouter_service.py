@@ -77,8 +77,8 @@ class OpenRouterService:
         headers = {
             "Authorization": f"Bearer {openrouter_api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://github.com/jules-discord-bot",
-            "X-Title": "Jules Discord Bot",
+            "HTTP-Referer": "https://github.com/codecat-discord-bot",
+            "X-Title": "CodeCat Discord Bot",
         }
 
         system_prompt = """You are an expert code generation assistant. Your task is to generate code changes based on user requests.

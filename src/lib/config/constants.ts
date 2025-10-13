@@ -11,7 +11,7 @@
  * Application metadata and branding
  */
 export const APP_CONFIG = {
-  name: 'Jules Discord Developer Agent',
+  name: 'CodeCat Discord Developer Agent',
   description: 'AI-powered development tasks directly from Discord',
   version: '1.0.0',
 } as const;
@@ -172,8 +172,8 @@ export const QUERY_PARAMS = {
  * Local storage keys
  */
 export const STORAGE_KEYS = {
-  theme: 'jules-theme',
-  lastVisitedGuild: 'jules-last-guild',
+  theme: 'codecat-theme',
+  lastVisitedGuild: 'codecat-last-guild',
 } as const;
 
 /**

@@ -27,11 +27,11 @@ async def interactions(request: Request) -> JSONResponse:
     return JSONResponse({"type": 5})
 
 
-@router.post("/webhook/jules")
-async def webhook_jules(request: Request) -> JSONResponse:
-    """Placeholder endpoint for Jules webhooks."""
+@router.post("/webhook/codecat")
+async def webhook_codecat(request: Request) -> JSONResponse:
+    """Placeholder endpoint for CodeCat webhooks."""
     payload = await request.json()
-    logger.debug("Received Jules webhook payload: %s", payload)
+    logger.debug("Received CodeCat webhook payload: %s", payload)
     return JSONResponse({"status": "accepted"})
 
 

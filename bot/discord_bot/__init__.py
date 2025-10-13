@@ -1,5 +1,5 @@
 """Discord bot package exports."""
 
-from .bot import JulesBot, create_bot
+from .bot import CodeCatBot, create_bot
 
-__all__ = ["JulesBot", "create_bot"]
+__all__ = ["CodeCatBot", "create_bot"]

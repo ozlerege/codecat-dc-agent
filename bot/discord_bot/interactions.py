@@ -1,4 +1,4 @@
-"""Discord UI interactions for the Jules bot."""
+"""Discord UI interactions for the CodeCat bot."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class ConfirmationView(discord.ui.View):
-    """Discord UI for moderators to confirm or reject Jules tasks."""
+    """Discord UI for moderators to confirm or reject CodeCat tasks."""
 
     def __init__(self, context: PendingTaskContext):
         super().__init__(timeout=None)
@@ -59,7 +59,7 @@ class ConfirmationView(discord.ui.View):
                     view=self,
                 )
                 await interaction.followup.send(
-                    "Task confirmed. Jules is starting now.", ephemeral=True
+                    "Task confirmed. CodeCat is starting now.", ephemeral=True
                 )
             else:
                 await self.context.bot.reject_task(

@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CodeCat Discord Developer Agent
 
-## Getting Started
+AI-assisted development tasks from Discord, with an admin-focused Next.js dashboard for managing guild permissions, CodeCat API keys, and task history. The project contains both the web dashboard and the Discord bot/API service.
 
-First, run the development server:
+## Repository Structure
+
+- `src/` — Next.js 15 App Router dashboard (React 19, Tailwind CSS 4, shadcn/ui, TanStack Query).
+- `bot/` — Discord bot + Railway-ready Python backend.
+- `lib/`, `features/` — Modularized frontend logic (Supabase auth, guild/task orchestration).
+
+## Prerequisites
+
+- [Bun](https://bun.sh/docs/installation) ≥ 1.1 (package management + scripts).
+- Node.js ≥ 20 (used by Next.js runtime).
+- Python ≥ 3.11 (for the Discord bot service).
+- Supabase project (URL, anon key, service role key).
+- Discord application with Slash Command + Bot token.
+- GitHub App credentials for PR creation.
+
+## Environment Variables
+
+Create a root `.env.local` for the dashboard based on `.env.example`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+cp .env.example .env.local
+```
+
+| Key | Description |
+| --- | --- |
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase project credentials (service key used server-side only). |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client-side Supabase configuration. |
+| `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_TOKEN`, `DISCORD_BOT_TOKEN` | Discord application + bot credentials and signature verification key. |
+| `NEXT_PUBLIC_DISCORD_APP_ID` | Used by the dashboard for Discord OAuth initiation. |
+| `NEXT_PUBLIC_GITHUB_CLIENT_ID`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | GitHub App credentials for CodeCat PR automation. |
+| `NEXT_PUBLIC_SITE_URL` | Base URL of the dashboard (e.g., `http://localhost:3000` during development). |
+
+For the bot service, copy `bot/.env.example` to `bot/.env` and fill in the matching keys plus any bot-specific settings (Railway URL, webhook secrets, etc.).
+
+## Install Dependencies
+
+```bash
+# from repo root
+bun install
+
+# optional: ensure git hooks/lint tooling install here if needed
+```
+
+The bot runs in a separate Python environment:
+
+```bash
+cd bot
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+## Running Locally
+
+### 1. Supabase + External Services
+
+1. Create a Supabase project with the schema defined in `project-documentation.md`.
+2. Configure Discord Slash Command `/codecat` and add the bot to a guild.
+3. Register or configure a GitHub App for PR creation (App ID + secret).
+
+Populate all environment variables with the values from those services before starting the app or bot.
+
+### 2. Dashboard (Next.js)
+
+```bash
+# from repo root
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The dashboard is served at `http://localhost:3000`. Sign in with Discord (Supabase Auth) to access guild management, task views, and admin settings.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Discord Bot + API
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cd bot
+source .venv/bin/activate
+python main.py
+```
 
-## Learn More
+The bot listens for slash commands via Discord interactions, creates tasks in Supabase, and triggers CodeCat workflows after confirmation. When deploying to Railway, use the same environment variables defined in `bot/.env`.
 
-To learn more about Next.js, take a look at the following resources:
+## Useful Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `bun run lint` — Run ESLint on the dashboard codebase.
+- `bun run build` — Production build (Turbopack).
+- `bun run start` — Serve the built dashboard.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+For the bot service, add any custom scripts or process managers (e.g., `python main.py`, `railway run`) as needed.
 
-## Deploy on Vercel
+## Troubleshooting
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Env issues**: Missing Supabase or Discord credentials will surface as runtime env errors (`lib/config/env` performs validation). Ensure both `.env.local` and `bot/.env` are populated.
+- **Auth callback mismatch**: Update `NEXT_PUBLIC_SITE_URL` and Supabase redirect URLs to match your local/production domains.
+- **Discord signature errors**: Confirm `DISCORD_PUBLIC_KEY` matches the value from the Discord Developer Portal.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+With the dashboard and bot running, Discord admins can trigger CodeCat tasks via `/codecat` and manage approvals through the dashboard or interactive Discord buttons. PR links generated by CodeCat will appear in the task detail views and corresponding Discord updates.

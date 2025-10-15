@@ -5,11 +5,11 @@ import { ArrowRight, GithubIcon, Menu, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { PixelButton } from "@/components/pixel-button";
-import { cn } from "@/lib/utils";
 import {
   PixelCard,
   PixelCardContent,
   PixelCardDescription,
+  PixelCardFooter,
   PixelCardHeader,
   PixelCardTitle,
 } from "@/components/pixel-card";
@@ -58,7 +58,7 @@ export default function Home() {
                 href={link.href}
                 className="font-bold text-muted-foreground transition hover:text-foreground text-lg"
               >
-                {link.label}
+                <PixelCardTitle>{link.label}</PixelCardTitle>
               </Link>
             ))}
           </nav>
@@ -82,13 +82,13 @@ export default function Home() {
         <div className="mx-auto grid w-full max-w-8xl gap-20 lg:grid-cols-[1fr_1.08fr] lg:items-center">
           <div className="flex flex-col gap-10">
             <div className="flex flex-col gap-6 text-center lg:text-left">
-              <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+              <PixelCardTitle className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
                 {heroHeading}
-              </h1>
+              </PixelCardTitle>
 
-              <p className="text-pretty text-lg text-muted-foreground">
+              <PixelCardDescription className="text-pretty text-lg text-muted-foreground">
                 {heroDescription}
-              </p>
+              </PixelCardDescription>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-start">
@@ -117,22 +117,19 @@ export default function Home() {
         </div>
       </section>
 
-      <section
-        id="features"
-        className="px-6 py-20 sm:px-8 lg:px-10 lg:py-24 xl:py-28"
-      >
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-16">
+      <section id="features" className="px-10 sm:px-12 py-20 lg:px-12 lg:py-24">
+        <div className="mx-auto flex w-full max-w-8xl flex-col gap-16">
           <div className="mx-auto flex max-w-2xl flex-col items-center gap-5 text-center">
-            <span className="rounded-full border border-border/60 bg-muted/40 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            <PixelCardTitle className="rounded-full border border-border/60 bg-muted/40 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               Features
-            </span>
-            <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+            </PixelCardTitle>
+            <PixelCardTitle className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
               Everything you need to orchestrate CodeCat from Discord
-            </h2>
-            <p className="text-pretty text-base text-muted-foreground sm:text-lg">
+            </PixelCardTitle>
+            <PixelCardDescription className="text-pretty text-base text-muted-foreground sm:text-lg">
               Configure your workflow end-to-end: connect repos, assign keys,
               control access, and keep shipping without leaving your guild.
-            </p>
+            </PixelCardDescription>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
@@ -140,9 +137,12 @@ export default function Home() {
               <PixelCard key={feature.title}>
                 <PixelCardHeader>
                   <PixelCardTitle>{feature.title}</PixelCardTitle>
-                  <PixelCardDescription>{feature.description}</PixelCardDescription>
+                  <PixelCardDescription>
+                    {feature.description}
+                  </PixelCardDescription>
                 </PixelCardHeader>
-                <PixelCardContent>
+
+                <PixelCardFooter>
                   <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-dashed border-border/80 bg-background/80 shadow-inner">
                     <Image
                       src={feature.image}
@@ -153,7 +153,7 @@ export default function Home() {
                       sizes="(min-width: 1024px) 400px, (min-width: 768px) 45vw, 90vw"
                     />
                   </div>
-                </PixelCardContent>
+                </PixelCardFooter>
               </PixelCard>
             ))}
           </div>

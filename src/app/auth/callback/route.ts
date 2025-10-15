@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/schema";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -8,7 +10,7 @@ export async function GET(request: Request) {
   const origin = requestUrl.origin;
 
   if (code) {
-    const supabase = await createClient();
+    const supabase = (await createClient()) as SupabaseClient<Database>;
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(
       code
     );
@@ -65,12 +67,16 @@ export async function GET(request: Request) {
       }
 
       if (!existingUser) {
-        const { error: insertError } = await supabase.from("users").insert({
+        const insertPayload = {
           id: userData.user.id,
           discord_id: discordId,
           discord_username: displayName,
           email: userData.user.email,
-        });
+        } satisfies Database["public"]["Tables"]["users"]["Insert"];
+
+        const { error: insertError } = await supabase
+          .from("users")
+          .insert(insertPayload as never);
 
         if (insertError) {
           console.error("Error inserting new user record:", insertError);
@@ -83,25 +89,34 @@ export async function GET(request: Request) {
 
     // Handle GitHub OAuth - redirect back to settings with refresh parameter
     if (githubIdentity) {
+      const githubIdentityData = githubIdentity.identity_data as
+        | Record<string, unknown>
+        | null;
+
+      const getStringValue = (value: unknown): string | null =>
+        typeof value === "string" && value.trim().length > 0 ? value : null;
+
       // Extract GitHub token and username
       const githubToken =
-        githubIdentity.access_token ||
-        githubIdentity.identity_data?.access_token ||
-        githubIdentity.identity_data?.provider_token;
+        getStringValue(githubIdentityData?.["access_token"]) ??
+        getStringValue(githubIdentityData?.["provider_token"]) ??
+        getStringValue(userData.user.user_metadata?.["github_token"]);
 
       const githubUsername =
-        githubIdentity.identity_data?.user_name ||
-        githubIdentity.identity_data?.login ||
-        userData.user.user_metadata?.user_name;
+        getStringValue(githubIdentityData?.["user_name"]) ??
+        getStringValue(githubIdentityData?.["login"]) ??
+        getStringValue(userData.user.user_metadata?.["user_name"]);
 
       if (githubToken) {
         // Store GitHub token and username in users table
+        const updatePayload = {
+          github_access_token: githubToken,
+          github_username: githubUsername,
+        } satisfies Database["public"]["Tables"]["users"]["Update"];
+
         const { error: updateError } = await supabase
           .from("users")
-          .update({
-            github_access_token: githubToken,
-            github_username: githubUsername,
-          })
+          .update(updatePayload as never)
           .eq("id", userData.user.id);
 
         if (updateError) {

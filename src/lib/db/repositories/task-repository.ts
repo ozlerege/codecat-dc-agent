@@ -7,8 +7,10 @@
  * @module db/repositories
  */
 
-import { BaseRepository } from './base-repository';
-import { TASK_CONFIG, type TaskStatus } from '@/lib/config/constants';
+import { BaseRepository } from "./base-repository";
+import { TASK_CONFIG, type TaskStatus } from "@/lib/config/constants";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/schema";
 
 /**
  * Task record type from database
@@ -49,8 +51,8 @@ export type UpdateTaskInput = {
  * Manages all task-related database operations
  */
 export class TaskRepository extends BaseRepository {
-  constructor(client: Parameters<typeof BaseRepository.prototype.constructor>[0]) {
-    super(client, 'TaskRepository');
+  constructor(client: SupabaseClient<Database>) {
+    super(client, "TaskRepository");
   }
 
   /**
@@ -194,23 +196,26 @@ export class TaskRepository extends BaseRepository {
     } = input;
 
     try {
-      const { data, error } = await this.client
-        .from('tasks')
-        .insert({
-          user_id: userId,
-          discord_user_id: discordUserId,
-          guild_id: guildId,
-          prompt,
-          status,
-          pr_url: prUrl,
-        })
-        .select('*')
-        .single();
+      const insertPayload = {
+        user_id: userId,
+        discord_user_id: discordUserId,
+        guild_id: guildId,
+        prompt,
+        status,
+        pr_url: prUrl,
+      } satisfies Database["public"]["Tables"]["tasks"]["Insert"];
 
+      const { data, error } = await this.client
+        .from("tasks")
+        .insert(insertPayload as never)
+        .select("*")
+        .single();
       if (error) throw error;
 
-      const task = this.requireData(data, 'create', 'Task');
-      this.logSuccess('create', { taskId: task.id, guildId, status });
+      const typedData =
+        data as Database["public"]["Tables"]["tasks"]["Row"] | null;
+      const task = this.requireData(typedData, "create", "Task");
+      this.logSuccess("create", { taskId: task.id, guildId, status });
 
       return task as TaskRecord;
     } catch (error) {
@@ -237,7 +242,7 @@ export class TaskRepository extends BaseRepository {
     }
 
     try {
-      const dbUpdates: Record<string, unknown> = {};
+      const dbUpdates: Database["public"]["Tables"]["tasks"]["Update"] = {};
 
       if (updates.status !== undefined) {
         dbUpdates.status = updates.status;
@@ -247,16 +252,23 @@ export class TaskRepository extends BaseRepository {
       }
 
       const { data, error } = await this.client
-        .from('tasks')
-        .update(dbUpdates)
-        .eq('id', taskId)
-        .select('*')
+        .from("tasks")
+        .update(dbUpdates as never)
+        .eq("id", taskId)
+        .select("*")
         .single();
 
       if (error) throw error;
 
-      const task = this.requireData(data, 'update', 'Task');
-      this.logSuccess('update', { taskId, updatedFields: Object.keys(dbUpdates) });
+      const typedData =
+        data as Database["public"]["Tables"]["tasks"]["Row"] | null;
+      const task = this.requireData(typedData, "update", "Task");
+      this.logSuccess("update", {
+        taskId,
+        updatedFields: Object.keys(dbUpdates).filter(
+          (key) => dbUpdates[key as keyof typeof dbUpdates] !== undefined
+        ),
+      });
 
       return task as TaskRecord;
     } catch (error) {

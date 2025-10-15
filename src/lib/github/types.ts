@@ -39,7 +39,7 @@ export type GitHubRepository = {
 /**
  * GitHub API error response
  */
-export type GitHubApiError = {
+export type GitHubApiErrorBody = {
   message: string;
   documentation_url?: string;
   errors?: Array<{
@@ -71,7 +71,7 @@ export class GitHubApiError extends Error {
   constructor(
     public status: number,
     public statusText: string,
-    public body: GitHubApiError,
+    public body: GitHubApiErrorBody,
     message?: string
   ) {
     super(

@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { GitHubClient } from "@/lib/github/client";
-import { getGitHubAccessToken } from "@/lib/github/auth";
 import { GitHubApiError } from "@/lib/github/types";
+import type { Database } from "@/lib/supabase/schema";
+
+type UserGitHubFields = Pick<
+  Database["public"]["Tables"]["users"]["Row"],
+  "github_access_token" | "github_username"
+>;
 
 /**
  * GET /api/github/repositories
@@ -24,7 +29,7 @@ export async function GET() {
     .from("users")
     .select("github_access_token, github_username")
     .eq("id", data.user.id)
-    .single();
+    .single<UserGitHubFields>();
 
   if (userError) {
     console.error("Error fetching user GitHub token:", userError);

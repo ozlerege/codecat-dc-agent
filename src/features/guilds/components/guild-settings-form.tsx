@@ -166,11 +166,11 @@ export const GuildSettingsForm = ({
     error: modelsError,
   } = useOpenRouterModelsQuery();
 
+  const apiModelCount = Array.isArray(apiModels) ? apiModels.length : 0;
+
   const modelOptions = useMemo(() => {
     const baseList =
-      apiModels && apiModels.length > 0
-        ? apiModels
-        : FALLBACK_OPENROUTER_MODELS;
+      apiModelCount > 0 ? apiModels! : FALLBACK_OPENROUTER_MODELS;
 
     if (
       selectedModel &&
@@ -189,7 +189,7 @@ export const GuildSettingsForm = ({
     }
 
     return baseList;
-  }, [apiModels, selectedModel]);
+  }, [apiModelCount, apiModels, selectedModel]);
 
   const selectedModelOption = modelOptions.find(
     (model) => model.id === selectedModel
@@ -365,7 +365,7 @@ export const GuildSettingsForm = ({
         <PixelSelect
           value={selectedModel}
           onValueChange={setSelectedModel}
-          disabled={isSaving || (isLoadingModels && !apiModels?.length)}
+          disabled={isSaving || (isLoadingModels && apiModelCount === 0)}
         >
           <PixelSelectTrigger>
             <PixelSelectValue placeholder="Select an OpenRouter model">

@@ -6,12 +6,12 @@
  * @module github/client
  */
 
-import type {
-  GitHubRepository,
-  GitHubRepositoryListResponse,
+import {
   GitHubApiError,
-  GitHubRateLimit,
-  GitHubRepoOption,
+  type GitHubRepository,
+  type GitHubRepositoryListResponse,
+  type GitHubRateLimit,
+  type GitHubRepoOption,
 } from "./types";
 
 /**

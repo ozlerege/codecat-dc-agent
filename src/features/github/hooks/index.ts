@@ -9,6 +9,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
 import { getErrorMessage } from "@/lib/api/types";
+import type { GuildDetail } from "@/lib/guilds/service";
 import type {
   GitHubRepositoriesResult,
   GitHubRepoConnection,
@@ -59,9 +60,12 @@ export const useGitHubRepositoriesQuery = () =>
 const connectGitHubRepo = async (
   guildId: string,
   connection: GitHubRepoConnection
-): Promise<{ success: boolean; guild: any }> => {
+): Promise<{ success: boolean; guild: GuildDetail["guild"] }> => {
   try {
-    return await apiClient.post(`/api/guilds/${guildId}/github`, connection);
+    return await apiClient.post<{ success: boolean; guild: GuildDetail["guild"] }>(
+      `/api/guilds/${guildId}/github`,
+      connection
+    );
   } catch (error) {
     throw new Error(
       getErrorMessage(error) || "Failed to connect GitHub repository"
@@ -74,9 +78,11 @@ const connectGitHubRepo = async (
  */
 const disconnectGitHubRepo = async (
   guildId: string
-): Promise<{ success: boolean; guild: any }> => {
+): Promise<{ success: boolean; guild: GuildDetail["guild"] }> => {
   try {
-    return await apiClient.delete(`/api/guilds/${guildId}/github`);
+    return await apiClient.delete<{ success: boolean; guild: GuildDetail["guild"] }>(
+      `/api/guilds/${guildId}/github`
+    );
   } catch (error) {
     throw new Error(
       getErrorMessage(error) || "Failed to disconnect GitHub repository"

@@ -10,7 +10,7 @@ export type {
   GitHubRepository,
   GitHubRepoOption,
   GitHubConnectionStatus,
-  GitHubApiError,
+  GitHubApiErrorBody,
 } from "@/lib/github/types";
 
 /**

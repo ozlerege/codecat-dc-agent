@@ -36,12 +36,18 @@ export const getGitHubAccessToken = (user: User, providerToken?: string | null):
   );
 
   if (githubIdentity) {
+    const identityData = githubIdentity.identity_data as
+      | Record<string, unknown>
+      | null;
+
+    const getStringValue = (value: unknown): string | null =>
+      typeof value === "string" && value.trim().length > 0 ? value : null;
+
     // Try different possible token locations in identity
     const token =
-      githubIdentity.access_token ||
-      githubIdentity.identity_data?.access_token ||
-      githubIdentity.identity_data?.provider_token ||
-      githubIdentity.identity_data?.token;
+      getStringValue(identityData?.["access_token"]) ??
+      getStringValue(identityData?.["provider_token"]) ??
+      getStringValue(identityData?.["token"]);
 
     if (token) {
       return token;

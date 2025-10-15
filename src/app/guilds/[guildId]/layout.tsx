@@ -13,11 +13,12 @@ type TypedSupabaseClient = SupabaseClient<Database>;
 
 type GuildLayoutProps = {
   children: ReactNode;
-  params: { guildId: string };
+  params: Promise<{ guildId: string }>;
 };
 
 const GuildLayout = async ({ children, params }: GuildLayoutProps) => {
-  const normalizedGuildId = normalizeGuildId(params.guildId);
+  const { guildId } = await params;
+  const normalizedGuildId = normalizeGuildId(guildId);
 
   if (!normalizedGuildId) {
     notFound();

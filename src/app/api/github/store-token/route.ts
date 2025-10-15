@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/schema";
 
 /**
  * POST /api/github/store-token
@@ -16,19 +18,24 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.getSession();
+    const db = supabase as SupabaseClient<Database>;
+    const { data, error } = await db.auth.getSession();
 
     if (error || !data.session?.user) {
       return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
     }
 
     // Store the token in the users table
-    const { error: updateError } = await supabase
+    const updatePayload = {
+      github_access_token: token,
+      github_username: username ?? null,
+    } satisfies Database["public"]["Tables"]["users"]["Update"];
+
+    const { error: updateError } = await db
       .from("users")
-      .update({
-        github_access_token: token,
-        github_username: username || null,
-      })
+      // TypeScript inference for Supabase client returns `never` for the update payload
+      // despite the schema being supplied. Cast to never after validating the shape.
+      .update(updatePayload as never)
       .eq("id", data.session.user.id);
 
     if (updateError) {

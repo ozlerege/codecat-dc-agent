@@ -8,7 +8,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../schema';
+import type { Database } from '@/lib/supabase/schema';
 import { GuildRepository } from './guild-repository';
 import { TaskRepository } from './task-repository';
 

@@ -8,7 +8,8 @@
  */
 
 import { BaseRepository } from "./base-repository";
-import type { GuildPermissions } from "../schema";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database, GuildPermissions } from "@/lib/supabase/schema";
 import { GUILD_CONFIG } from "@/lib/config/constants";
 
 /**
@@ -66,9 +67,7 @@ export type UpdateGuildInput = {
  * Manages all guild-related database operations
  */
 export class GuildRepository extends BaseRepository {
-  constructor(
-    client: Parameters<typeof BaseRepository.prototype.constructor>[0]
-  ) {
+  constructor(client: SupabaseClient<Database>) {
     super(client, "GuildRepository");
   }
 
@@ -153,7 +152,7 @@ export class GuildRepository extends BaseRepository {
     } = input;
 
     try {
-      const { error } = await this.client.from("guilds").insert({
+      const insertPayload = {
         guild_id: guildId,
         installer_user_id: installerUserId,
         name,
@@ -162,7 +161,11 @@ export class GuildRepository extends BaseRepository {
         default_repo: defaultRepo,
         default_openrouter_api_key: defaultOpenRouterApiKey,
         default_model: defaultModel,
-      });
+      } satisfies Database["public"]["Tables"]["guilds"]["Insert"];
+
+      const { error } = await this.client
+        .from("guilds")
+        .insert(insertPayload as never);
 
       if (error) {
         // Ignore duplicate key errors (guild already exists)
@@ -199,9 +202,13 @@ export class GuildRepository extends BaseRepository {
     this.validateRequired({ guildId, userId, name }, "updateName");
 
     try {
+      const updatePayload = {
+        name,
+      } satisfies Database["public"]["Tables"]["guilds"]["Update"];
+
       const { error } = await this.client
         .from("guilds")
-        .update({ name })
+        .update(updatePayload as never)
         .eq("guild_id", guildId)
         .eq("installer_user_id", userId);
 
@@ -237,7 +244,7 @@ export class GuildRepository extends BaseRepository {
     }
 
     try {
-      const dbUpdates: Record<string, unknown> = {};
+      const dbUpdates: Database["public"]["Tables"]["guilds"]["Update"] = {};
 
       if (updates.defaultRepo !== undefined) {
         dbUpdates.default_repo = updates.defaultRepo;
@@ -272,7 +279,7 @@ export class GuildRepository extends BaseRepository {
 
       const { data, error } = await this.client
         .from("guilds")
-        .update(dbUpdates)
+        .update(dbUpdates as never)
         .eq("guild_id", guildId)
         .eq("installer_user_id", userId)
         .select("*")

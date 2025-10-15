@@ -80,16 +80,18 @@ export const createGuildRecord = async (
     defaultOpenRouterApiKey = null,
   } = input;
 
-  const { error } = await client.from("guilds").insert(
-    {
-      guild_id: guildId,
-      installer_user_id: installerUserId,
-      name,
-      default_branch: defaultBranch,
-      permissions,
-      default_repo: defaultRepo,
-      default_openrouter_api_key: defaultOpenRouterApiKey,
-    },
+  const insertPayload = {
+    guild_id: guildId,
+    installer_user_id: installerUserId,
+    name,
+    default_branch: defaultBranch,
+    permissions,
+    default_repo: defaultRepo,
+    default_openrouter_api_key: defaultOpenRouterApiKey,
+  } satisfies Database["public"]["Tables"]["guilds"]["Insert"];
+
+  const { error } = await client.from("guilds").upsert(
+    insertPayload as never,
     {
       onConflict: "guild_id",
       ignoreDuplicates: true,
@@ -101,9 +103,13 @@ export const createGuildRecord = async (
   }
 
   if (name) {
+    const updatePayload = {
+      name,
+    } satisfies Database["public"]["Tables"]["guilds"]["Update"];
+
     await client
       .from("guilds")
-      .update({ name })
+      .update(updatePayload as never)
       .eq("guild_id", guildId)
       .eq("installer_user_id", installerUserId);
   }
@@ -169,7 +175,7 @@ export const updateGuildRecord = async (
     name,
   } = input;
 
-  const updates: Record<string, unknown> = {};
+  const updates: Database["public"]["Tables"]["guilds"]["Update"] = {};
 
   if (defaultRepo !== undefined) {
     updates.default_repo = defaultRepo;
@@ -197,7 +203,7 @@ export const updateGuildRecord = async (
 
   const { data, error } = await client
     .from("guilds")
-    .update(updates)
+    .update(updates as never)
     .eq("guild_id", guildId)
     .eq("installer_user_id", installerUserId)
     .select(

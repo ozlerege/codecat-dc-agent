@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { exchangeGitHubCode, getGitHubUserInfo } from "@/lib/github/oauth";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/schema";
 
 /**
  * GitHub OAuth Callback
@@ -42,6 +44,7 @@ export async function GET(request: Request) {
 
     // Get Supabase client
     const supabase = await createClient();
+    const db = supabase as SupabaseClient<Database>;
 
     // Store GitHub token and username in users table
     console.log("Storing GitHub token for user:", userId, {
@@ -49,12 +52,14 @@ export async function GET(request: Request) {
       username: githubUser.login,
     });
 
-    const { error: updateError } = await supabase
+    const updatePayload = {
+      github_access_token: access_token,
+      github_username: githubUser.login,
+    } satisfies Database["public"]["Tables"]["users"]["Update"];
+
+    const { error: updateError } = await db
       .from("users")
-      .update({
-        github_access_token: access_token,
-        github_username: githubUser.login,
-      })
+      .update(updatePayload as never)
       .eq("id", userId);
 
     if (updateError) {

@@ -78,6 +78,18 @@ export function useAuth() {
     },
   });
 
+  const signIn = (options?: SignInOptions) => {
+    signInMutation.mutate(options);
+  };
+
+  const signInWithGitHub = (options?: SignInOptions) => {
+    signInWithGitHubMutation.mutate(options);
+  };
+
+  const signOut = (options?: SignOutOptions) => {
+    signOutMutation.mutate(options);
+  };
+
   return {
     // State
     session,
@@ -85,19 +97,19 @@ export function useAuth() {
     isAuthenticated: !!session,
 
     // Sign in
-    signIn: signInMutation.mutate,
+    signIn,
     signInAsync: signInMutation.mutateAsync,
     isSigningIn: signInMutation.isPending,
     signInError: signInMutation.error,
 
     // GitHub sign in
-    signInWithGitHub: signInWithGitHubMutation.mutate,
+    signInWithGitHub,
     signInWithGitHubAsync: signInWithGitHubMutation.mutateAsync,
     isSigningInWithGitHub: signInWithGitHubMutation.isPending,
     signInWithGitHubError: signInWithGitHubMutation.error,
 
     // Sign out
-    signOut: signOutMutation.mutate,
+    signOut,
     signOutAsync: signOutMutation.mutateAsync,
     isSigningOut: signOutMutation.isPending,
     signOutError: signOutMutation.error,

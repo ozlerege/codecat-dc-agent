@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Optional
-
 import discord
 from discord import app_commands
 
@@ -77,7 +75,6 @@ class CodeCatBot(discord.Client):
         interaction: discord.Interaction[discord.Client],
         branch_name: str,
         task_description: str,
-        repo_override: Optional[str],
     ) -> None:
         """Business logic for the /codecat command."""
         if interaction.guild_id is None or interaction.guild is None:
@@ -112,11 +109,7 @@ class CodeCatBot(discord.Client):
             )
             return
 
-        repo = (
-            repo_override
-            or guild_record.get("github_repo_name")
-            or guild_record.get("default_repo")
-        )
+        repo = guild_record.get("github_repo_name") or guild_record.get("default_repo")
         if not repo:
             await interaction.followup.send(
                 "No GitHub repository is linked for this guild yet. "
@@ -540,7 +533,7 @@ class CodeCatBot(discord.Client):
         bullet_lines = []
 
         bullet_lines.append(
-            "• `/codecat <branch> <task> [repo]` – Propose a CodeCat task in the configured repository."
+            "• `/codecat <branch> <task>` – Propose a CodeCat task in the configured repository."
         )
 
         bullet_lines.append(
@@ -690,39 +683,22 @@ class CodeCatBot(discord.Client):
                 content=payload["content"], embed=payload["embed"]
             )
             self._register_task_message(context.task_id, channel_message, context)
-            await interaction.followup.send(
-                "Task confirmed automatically. CodeCat is starting now.", ephemeral=True
+            success, error_message = await self.start_confirmed_task(
+                context=context,
+                channel_message=channel_message,
+                view=None,
             )
-            try:
-                await self.start_confirmed_task(
-                    context=context,
-                    channel_message=channel_message,
-                    view=None,
-                )
-            except Exception:  # noqa: BLE001
-                error_payload = messages.build_error_message(
-                    "Failed to start CodeCat session. Please try again."
-                )
-                try:
-                    await self.supabase.update_task_status(context.task_id, "rejected")
-                except SupabaseServiceError as exc:
-                    logger.exception(
-                        "Failed to mark task %s as rejected after error: %s",
-                        context.task_id,
-                        exc,
-                    )
-                await channel_message.edit(
-                    content=error_payload["content"],
-                    embed=error_payload["embed"],
-                    view=None,
-                )
+            if success:
                 await interaction.followup.send(
-                    "CodeCat session could not be started. Please retry later.",
+                    "Task confirmed automatically. CodeCat is starting now.",
                     ephemeral=True,
                 )
-                self._task_contexts.pop(context.task_id, None)
-                self._task_messages.pop(context.task_id, None)
-                return
+            else:
+                await interaction.followup.send(
+                    f"Task confirmation failed: {error_message or 'Unknown error'}",
+                    ephemeral=True,
+                )
+            return
         else:
             payload = messages.build_pending_message(
                 requester=context.requester,
@@ -1119,8 +1095,12 @@ class CodeCatBot(discord.Client):
         context: PendingTaskContext,
         channel_message: discord.Message | None,
         view: discord.ui.View | None,
-    ) -> None:
-        """Kick off OpenRouter + GitHub workflow after moderator confirmation."""
+    ) -> tuple[bool, str | None]:
+        """Kick off OpenRouter + GitHub workflow after moderator confirmation.
+
+        Returns:
+            A tuple containing a success flag and optional error message.
+        """
         access_token = context.github_access_token
         if not access_token:
             error_msg = "No GitHub access token available. Cannot create PR."
@@ -1170,8 +1150,9 @@ class CodeCatBot(discord.Client):
             logger.info("Generated %d file changes", len(changes))
         except OpenRouterServiceError as exc:
             logger.exception("Failed to generate code changes: %s", exc)
-            await self._handle_task_failed(context=context, error_message=str(exc))
-            return
+            error_message = str(exc)
+            await self._handle_task_failed(context=context, error_message=error_message)
+            return False, error_message
 
         # Ensure branch exists
         try:
@@ -1183,8 +1164,9 @@ class CodeCatBot(discord.Client):
             )
         except GithubServiceError as exc:
             logger.exception("Failed to create branch: %s", exc)
-            await self._handle_task_failed(context=context, error_message=f"Failed to create branch: {exc}")
-            return
+            error_message = f"Failed to create branch: {exc}"
+            await self._handle_task_failed(context=context, error_message=error_message)
+            return False, error_message
 
         # Commit all file changes to the branch
         try:
@@ -1229,13 +1211,15 @@ class CodeCatBot(discord.Client):
                 )
             else:
                 logger.warning("No files to commit for task %s", context.task_id)
-                await self._handle_task_failed(context=context, error_message="No files to commit")
-                return
+                error_message = "No files to commit"
+                await self._handle_task_failed(context=context, error_message=error_message)
+                return False, error_message
                 
         except GithubServiceError as exc:
             logger.exception("Failed to commit files: %s", exc)
-            await self._handle_task_failed(context=context, error_message=f"Failed to commit files: {exc}")
-            return
+            error_message = f"Failed to commit files: {exc}"
+            await self._handle_task_failed(context=context, error_message=error_message)
+            return False, error_message
 
         # Create pull request
         try:
@@ -1256,8 +1240,9 @@ class CodeCatBot(discord.Client):
             logger.info("PR created successfully: %s", pr_url)
         except GithubServiceError as exc:
             logger.exception("Failed to create PR: %s", exc)
-            await self._handle_task_failed(context=context, error_message=f"Failed to create PR: {exc}")
-            return
+            error_message = f"Failed to create PR: {exc}"
+            await self._handle_task_failed(context=context, error_message=error_message)
+            return False, error_message
 
         # Update task as completed
         try:
@@ -1276,6 +1261,7 @@ class CodeCatBot(discord.Client):
 
         self._task_contexts.pop(context.task_id, None)
         self._task_messages.pop(context.task_id, None)
+        return True, None
 
     async def _handle_task_failed(
         self,

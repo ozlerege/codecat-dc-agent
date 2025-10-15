@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
-
 import discord
 from discord import app_commands
 
@@ -23,19 +21,16 @@ def register_commands(bot: CodeCatBot) -> None:
     @app_commands.describe(
         branch_name="Branch to create/use for the task",
         task_description="Describe the work you want CodeCat to perform",
-        repo="Optional override in owner/repo format",
     )
     async def codecat_command(
         interaction: discord.Interaction[discord.Client],
         branch_name: str,
         task_description: str,
-        repo: Optional[str] = None,
     ) -> None:
         await bot.handle_codecat_command(
             interaction=interaction,
             branch_name=branch_name,
             task_description=task_description,
-            repo_override=repo,
         )
 
     @bot.tree.command(

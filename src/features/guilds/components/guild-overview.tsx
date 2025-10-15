@@ -88,11 +88,15 @@ export const GuildOverview = ({ guild }: GuildOverviewProps) => {
             </PixelCardHeader>
 
             <PixelCardFooter>
-              <PixelButton
-                onClick={() => router.push(`/guilds/${guild.id}/settings`)}
-              >
-                {guild.defaultOpenRouterApiKeySet ? "Connected" : "Set Api Key"}
-              </PixelButton>
+              {guild.defaultOpenRouterApiKeySet ? (
+                <PixelBadge variant="success">Connected</PixelBadge>
+              ) : (
+                <PixelButton
+                  onClick={() => router.push(`/guilds/${guild.id}/settings`)}
+                >
+                  Set Api Key
+                </PixelButton>
+              )}
             </PixelCardFooter>
           </PixelCard>
         </div>

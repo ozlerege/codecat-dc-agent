@@ -1,0 +1,23 @@
+<svg width="1280" height="800" viewBox="0 0 1280 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1f2937"/>
+      <stop offset="50%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="80" height="80" fill="none" stroke="#374151" stroke-width="1" opacity="0.2"/>
+      <circle cx="40" cy="40" r="4" fill="#4b5563" opacity="0.25"/>
+    </pattern>
+  </defs>
+  <rect width="1280" height="800" fill="url(#gradient)"/>
+  <rect width="1280" height="800" fill="url(#grid)"/>
+  <g opacity="0.65">
+    <rect x="140" y="200" width="420" height="320" rx="24" fill="#1f2937"/>
+    <rect x="600" y="200" width="420" height="320" rx="24" fill="#111827"/>
+    <rect x="360" y="360" width="520" height="280" rx="28" fill="#0f172a"/>
+  </g>
+  <text x="50%" y="90%" text-anchor="middle" fill="#9ca3af" font-family="Inter, system-ui, sans-serif" font-size="28" opacity="0.85">
+    Drop your product screenshot here
+  </text>
+</svg>

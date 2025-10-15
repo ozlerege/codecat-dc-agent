@@ -74,7 +74,7 @@ class ConfirmationView(discord.ui.View):
 
         try:
             if action == "confirm":
-                await self.context.bot.start_confirmed_task(
+                success, error_message = await self.context.bot.start_confirmed_task(
                     context=self.context,
                     channel_message=channel_message,
                     view=None,
@@ -82,9 +82,15 @@ class ConfirmationView(discord.ui.View):
                 await self.context.bot._clear_task_dm_views(
                     self.context.task_id, preserve=interaction.message
                 )
-                await interaction.followup.send(
-                    "Task confirmed. CodeCat is starting now.", ephemeral=True
-                )
+                if success:
+                    await interaction.followup.send(
+                        "Task confirmed. CodeCat is starting now.", ephemeral=True
+                    )
+                else:
+                    await interaction.followup.send(
+                        f"Task confirmation failed: {error_message or 'Unknown error'}",
+                        ephemeral=True,
+                    )
             else:
                 await self.context.bot.reject_task(
                     context=self.context,

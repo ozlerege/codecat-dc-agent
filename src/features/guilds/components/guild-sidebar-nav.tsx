@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BookOpen,
   LayoutDashboard,
   ListChecks,
   Settings,
@@ -21,7 +22,6 @@ import {
   SidebarFooter,
   SidebarProvider,
   SidebarSection,
-  SidebarSectionLabel,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -37,7 +37,6 @@ import { useGuildDetailQuery } from "@/lib/guilds/hooks";
 import { useGuildRouteContext } from "../context";
 import { cn } from "@/lib/utils";
 import { InviteBotButton } from "./invite-bot-button";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 type NavItem = {
   readonly id: string;
@@ -64,6 +63,12 @@ const navItems: NavItem[] = [
     label: "Tasks",
     href: (guildId: string) => `/guilds/${guildId}/tasks`,
     icon: ListChecks,
+  },
+  {
+    id: "documentation",
+    label: "Documentation",
+    href: (guildId: string) => `/guilds/${guildId}/documentation`,
+    icon: BookOpen,
   },
 ];
 

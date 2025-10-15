@@ -355,7 +355,7 @@ class GithubService:
         except GithubServiceError as exc:
             raise GithubServiceError(
                 "Unable to create branch '{branch}' on '{repo}'. "
-                "Verify the repository name, default branch, and token permissions."
+                "Verify the repository name, default branch, and push permissions."
                 .format(branch=branch_name, repo=repo_full_name)
             ) from exc
 

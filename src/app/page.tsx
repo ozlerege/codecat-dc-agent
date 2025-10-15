@@ -202,7 +202,7 @@ const FEATURES: FeatureInfo[] = [
   {
     title: "Confirming Tasks",
     description:
-      "Approve proposals in a single click and push updates instantly, with real-time progress back in Discord.",
+      "Approve proposals in a single click and push updates instantly, with real-time progress back in Discord. PR will be created then.",
     image: "/images/confirm.png",
   },
 ];

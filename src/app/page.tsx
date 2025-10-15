@@ -48,21 +48,6 @@ export default function Home() {
             </div>
           </div>
 
-          <nav
-            className="hidden items-center justify-between gap-10 md:flex"
-            aria-label="Main"
-          >
-            {navigationLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="font-bold text-muted-foreground transition hover:text-foreground text-lg"
-              >
-                <PixelCardTitle>{link.label}</PixelCardTitle>
-              </Link>
-            ))}
-          </nav>
-
           <div className="hidden md:flex">
             <SignInCard />
           </div>
@@ -120,9 +105,6 @@ export default function Home() {
       <section id="features" className="px-10 sm:px-12 py-20 lg:px-12 lg:py-24">
         <div className="mx-auto flex w-full max-w-8xl flex-col gap-16">
           <div className="mx-auto flex max-w-2xl flex-col items-center gap-5 text-center">
-            <PixelCardTitle className="rounded-full border border-border/60 bg-muted/40 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Features
-            </PixelCardTitle>
             <PixelCardTitle className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
               Everything you need to orchestrate CodeCat from Discord
             </PixelCardTitle>
@@ -159,6 +141,23 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <footer className="border-t-4 border-border px-6 py-8 sm:px-8 lg:px-10">
+        <div className="mx-auto flex w-full max-w-8xl items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <Image
+              src="/images/image.png"
+              alt="CodeCat"
+              width={64}
+              height={32}
+            />
+            <PixelCardTitle>CodeCat</PixelCardTitle>
+          </div>
+          <p className="text-sm text-muted-foreground font-mono">
+            © {new Date().getFullYear()} CodeCat. All rights reserved.
+          </p>
+        </div>
+      </footer>
     </main>
   );
 }

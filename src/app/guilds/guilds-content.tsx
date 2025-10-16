@@ -6,7 +6,12 @@ import { SelectGuildButton } from "./select-guild-button";
 import { useCreateGuildMutation, useGuildsQuery } from "@/lib/guilds/hooks";
 import { buildGuildIconUrl } from "@/lib/discord/guilds";
 import { PixelButton } from "@/components/pixel-button";
-import { PixelCard, PixelCardContent } from "@/components/pixel-card";
+import {
+  PixelCard,
+  PixelCardContent,
+  PixelCardDescription,
+  PixelCardTitle,
+} from "@/components/pixel-card";
 
 type GuildsContentProps = {
   initialUserName: string;
@@ -37,12 +42,12 @@ export const GuildsContent = ({ initialUserName }: GuildsContentProps) => {
     <div className="min-h-screen p-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between max-w-7xl mx-auto mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <PixelCardTitle className="text-3xl font-bold tracking-tight">
             Welcome, {userName}
-          </h1>
-          <p className="text-muted-foreground mt-1">
+          </PixelCardTitle>
+          <PixelCardDescription className="text-muted-foreground mt-1">
             Manage your Discord guilds and development tasks
-          </p>
+          </PixelCardDescription>
         </div>
         <SignOutButton />
       </header>
@@ -62,16 +67,16 @@ export const GuildsContent = ({ initialUserName }: GuildsContentProps) => {
         {!isLoading && !isError ? (
           <>
             <GuildSection
-              title="Saved Servers"
+              title="Connected Servers"
               description="Servers already connected to CodeCat."
               guilds={savedGuilds}
-              emptyMessage="No saved servers yet."
+              emptyMessage="No connected servers yet."
             />
             <GuildSection
-              title="Unsaved Servers"
+              title="Available Servers to Connect"
               description="Select a server to connect it with CodeCat and start managing tasks."
               guilds={unsavedGuilds}
-              emptyMessage="All available servers are already configured."
+              emptyMessage="All available servers are already connected."
               renderAction={(guild) => (
                 <SelectGuildButton
                   onSelect={() => handleSelectGuild(guild.id, guild.name)}
@@ -120,18 +125,22 @@ const GuildSection = ({
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-xl font-semibold">{title}</h2>
-        <p className="text-muted-foreground text-sm mt-1">{description}</p>
+        <PixelCardTitle className="text-xl font-semibold">
+          {title}
+        </PixelCardTitle>
+        <PixelCardDescription className="text-muted-foreground text-sm mt-1">
+          {description}
+        </PixelCardDescription>
       </div>
 
       {guilds.length === 0 ? (
-        <div className="rounded-lg border border-dashed bg-muted/40 p-6 text-center text-muted-foreground">
+        <PixelCard className="rounded-lg border border-dashed bg-muted/40 p-6 text-center text-muted-foreground">
           {emptyMessage}
-        </div>
+        </PixelCard>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {guilds.map((guild) => (
-            <PixelCard key={guild.id} title={guild.name}>
+            <PixelCard variant="default" key={guild.id} title={guild.name}>
               <PixelCardContent>
                 <div className="flex items-center gap-4">
                   <img

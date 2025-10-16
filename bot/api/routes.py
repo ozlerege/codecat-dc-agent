@@ -43,6 +43,14 @@ async def current_repo() -> JSONResponse:
 
 
 @router.get("/health")
-async def health() -> JSONResponse:
-    """Simple health check endpoint."""
-    return JSONResponse({"status": "ok"})
+async def health(request: Request) -> JSONResponse:
+    """Health check endpoint with bot status."""
+    bot_ready = False
+    if hasattr(request.app.state, 'bot'):
+        bot = request.app.state.bot
+        bot_ready = bot.is_ready() if bot else False
+    
+    return JSONResponse({
+        "status": "ok",
+        "bot_ready": bot_ready,
+    })
